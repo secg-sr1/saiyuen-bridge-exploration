@@ -1,0 +1,499 @@
+
+import  { styled } from '@mui/material/styles';
+import { useEffect, useRef, useState } from 'react';
+import { useLoader } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera, Html } from '@react-three/drei';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+
+import { Card, CardHeader, CardMedia, CardActions, Collapse, CardContent, Typography, Box, Avatar, IconButton } from '@mui/material';
+
+
+import { red } from '@mui/material/colors';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import ShareIcon from '@mui/icons-material/Share';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+
+import '@fontsource/roboto/300.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
+
+
+
+const ExpandMore = styled((props) => {
+  const { expand, ...other } = props; 
+  return <IconButton {...other} />
+})(({theme}) => ({
+  marginLeft: 'auto',
+  transition: theme.transitions.create('transform', {
+    duration: theme.transitions.duration.shortest,
+  }),
+
+  variants: [
+    {
+      props: ({ expand }) => !expand, 
+      style: {
+        transform: 'rotate(0deg)'
+      },
+    },
+    {
+      props: ({ expand }) => !!expand, 
+      style: {
+        transform: 'rotate(180deg)',
+      },
+    },
+  ],
+
+}))
+
+
+
+
+export default function Scene() {
+  const cameraRef = useRef();
+  const videoRef = useRef();
+  const [ showCard, setShowCard ] = useState(false);
+  const [expanded, setExpanded ] = useState(false);
+
+  const gltf = useLoader(GLTFLoader, 'https://cdn.glitch.global/610da9c5-d3d9-48be-83b9-3836bdc195cb/bidge-01-base.glb?v=1729731166335');
+  const gltfBridge = useLoader(GLTFLoader, 'https://cdn.glitch.global/610da9c5-d3d9-48be-83b9-3836bdc195cb/bidge-01-structure.glb?v=1729731146544');
+
+
+
+
+  useEffect(() => {
+    // Access the user's webcam and set it as the background
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: 'environment' }}})
+      .then((stream) => {
+        const videoElement = document.getElementById('videoBackground');
+        if (videoElement) {
+          videoElement.srcObject = stream;
+          videoElement.play();
+        }
+      })
+      .catch((err) => {
+        console.error('Error accessing webcam: ', err);
+      });
+  }, []);
+
+
+  const handleSphereClick = () => {
+    setShowCard(!showCard);
+  }
+
+  const handleExpandClick = () => {
+    setExpanded(!expanded);
+  }
+
+
+  return (
+    <>
+      <PerspectiveCamera ref={cameraRef} />
+      <OrbitControls makeDefault />
+
+      <directionalLight position={[1, 1, 1]} intensity={1.5} />
+      <ambientLight intensity={0.5} />
+
+      <primitive object={gltf.scene} scale={[0.2, 0.2, 0.2]} />
+      <primitive object={gltfBridge.scene} scale={[0.2, 0.2, 0.2]} />
+
+
+      <mesh position={[0, 0.5, -1]} onPointerDown={handleSphereClick}>
+        <sphereGeometry args={[0.1, 32, 32]} />
+        <meshStandardMaterial color="red" />
+
+
+        { showCard && 
+        
+        <Html 
+          center
+        >
+           
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '80%',
+              left:'30%',
+              zIndex: 9999, 
+              backgroundColor: 'white',
+              padding: 1,
+              borderRadius: 2
+            }}
+          >
+            <Card sx={{maxWidth: 345}}>
+                {/* <CardContent>
+                  <Typography>遊客站在橋上可以欣賞壯麗的風景</Typography>
+                </CardContent> */}
+                <CardHeader
+                  avatar={
+                    <Avatar sx={{ bgcolor: red[500] }} aria-label="recipe">
+                      R
+                    </Avatar>
+                  }
+                  action={
+                    <IconButton aria-label="settings">
+                      <MoreVertIcon />
+                    </IconButton>
+                  }
+                  title="Saiyen"
+                  subheader="Bridge"
+                />
+                  <CardMedia 
+                    component="img"
+                    height="110"
+                    image="https://github.com/secg-sr1/saiyuen-alpha/blob/main/public/bridge-01-upgrade.png?raw=true"
+                    alt="Bridge"
+                  />
+                  <CardContent>
+                    {/* <Typography sx={{fontWeight:200, fontSize:"16px"}}>
+                        Hello Friend
+                    </Typography> */}
+                  </CardContent>
+                  <CardActions disableSpacing>
+                    <IconButton>
+                      <FavoriteIcon />
+                    </IconButton>
+
+                    <IconButton aria-label="share">
+                        <ShareIcon />
+                    </IconButton>
+
+                    <ExpandMore
+                      expand={expanded}
+                      onClick={handleExpandClick}
+                      aria-expanded={expanded}
+                      arial-label="show more"
+                    >
+                      <ExpandMoreIcon />
+                    </ExpandMore>
+
+                  </CardActions>
+
+                  <Collapse in={expanded} timeout="auto" unmountOnExit>
+                      <CardContent>
+                        <Typography sx={{ fontWeight:200, fontSize:"16px"}}>
+                         - 象徵著過去與未來的連接。
+                        </Typography>
+                      </CardContent>
+                  </Collapse>
+                
+            </Card>
+          </Box>
+        
+        </Html>
+        }
+              
+      </mesh>
+
+
+
+      
+
+
+    </>
+  );
+}
+
+
+//////////////////////////////////////////
+
+export default function Scene() {
+  const cameraRef = useRef();
+  const videoRef = useRef();
+  const [showCard, setShowCard] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const gltf = useLoader(GLTFLoader, ''); // Load the main model
+  const gltfBridge = useLoader(GLTFLoader, ''); // Load the bridge model
+
+  useEffect(() => {
+    // Access the user's webcam and set it as the background
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: { exact: 'environment' } } })
+      .then((stream) => {
+        const videoElement = document.getElementById('videoBackground');
+        if (videoElement) {
+          videoElement.srcObject = stream;
+          videoElement.play();
+        }
+      })
+      .catch((err) => {
+        console.error('Error accessing webcam: ', err);
+      });
+  }, []);
+
+  const handleBridgeClick = () => {
+    setShowCard(!showCard);
+  };
+
+  const handleExpandClick = () => {
+    setExpanded(!expanded);
+  };
+
+  return (
+    <>
+      <PerspectiveCamera ref={cameraRef} />
+      <OrbitControls makeDefault />
+
+      <directionalLight position={[1, 1, 1]} intensity={1.5} />
+      <ambientLight intensity={0.5} />
+
+      <primitive object={gltf.scene} scale={[0.2, 0.2, 0.2]} />
+      
+      {/* Clickable primitive to display the card */}
+      <primitive
+        object={gltfBridge.scene}
+        scale={[0.2, 0.2, 0.2]}
+        onPointerDown={handleBridgeClick} // Event handler to toggle the card
+      />
+
+      {/* Render the card if showCard is true */}
+      {showCard && (
+        <Html center>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '80%',
+              left: '30%',
+              zIndex: 9999,
+              backgroundColor: 'white',
+              padding: 1,
+              borderRadius: 2,
+            }}
+          >
+            <Card sx={{ maxWidth: 345 }}>
+              <CardHeader
+                avatar={
+                  <Avatar sx={{ bgcolor: red[500] }} aria-label="recipe">
+                    R
+                  </Avatar>
+                }
+                action={
+                  <IconButton aria-label="settings">
+                    <MoreVertIcon />
+                  </IconButton>
+                }
+                title="Saiyen"
+                subheader="Bridge"
+              />
+              <CardMedia component="img" height="110" image="" alt="Bridge" />
+              <CardContent>
+                {/* Add content here if needed */}
+              </CardContent>
+              <CardActions disableSpacing>
+                <IconButton>
+                  <FavoriteIcon />
+                </IconButton>
+
+                <IconButton aria-label="share">
+                  <ShareIcon />
+                </IconButton>
+
+                <ExpandMore
+                  expand={expanded}
+                  onClick={handleExpandClick}
+                  aria-expanded={expanded}
+                  aria-label="show more"
+                >
+                  <ExpandMoreIcon />
+                </ExpandMore>
+              </CardActions>
+
+              <Collapse in={expanded} timeout="auto" unmountOnExit>
+                <CardContent>
+                  <Typography sx={{ fontWeight: 200, fontSize: '16px' }}>
+                    - 象徵著過去與未來的連接。
+                  </Typography>
+                </CardContent>
+              </Collapse>
+            </Card>
+          </Box>
+        </Html>
+      )}
+    </>
+  );
+}
+
+
+//////////////////
+
+
+import * as React from 'react';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+
+export default function BasicChips() {
+  return (
+    <Stack direction="row" spacing={1}>
+      <Chip label="Chip Filled" />
+      <Chip label="Chip Outlined" variant="outlined" />
+    </Stack>
+  );
+}
+
+
+////////////////////////
+
+import * as React from 'react';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+
+export default function CheckboxLabels() {
+  return (
+    <FormGroup>
+      <FormControlLabel control={<Checkbox defaultChecked />} label="Label" />
+      <FormControlLabel required control={<Checkbox />} label="Required" />
+      <FormControlLabel disabled control={<Checkbox />} label="Disabled" />
+    </FormGroup>
+  );
+}
+
+
+
+//////////////////////////////
+
+
+import * as React from 'react';
+import Box from '@mui/material/Box';
+import SpeedDial from '@mui/material/SpeedDial';
+import SpeedDialIcon from '@mui/material/SpeedDialIcon';
+import SpeedDialAction from '@mui/material/SpeedDialAction';
+import FileCopyIcon from '@mui/icons-material/FileCopyOutlined';
+import SaveIcon from '@mui/icons-material/Save';
+import PrintIcon from '@mui/icons-material/Print';
+import ShareIcon from '@mui/icons-material/Share';
+
+const actions = [
+  { icon: <FileCopyIcon />, name: 'Copy' },
+  { icon: <SaveIcon />, name: 'Save' },
+  { icon: <PrintIcon />, name: 'Print' },
+  { icon: <ShareIcon />, name: 'Share' },
+];
+
+export default function BasicSpeedDial() {
+  return (
+    <Box sx={{ height: 320, transform: 'translateZ(0px)', flexGrow: 1 }}>
+      <SpeedDial
+        ariaLabel="SpeedDial basic example"
+        sx={{ position: 'absolute', bottom: 16, right: 16 }}
+        icon={<SpeedDialIcon />}
+      >
+        {actions.map((action) => (
+          <SpeedDialAction
+            key={action.name}
+            icon={action.icon}
+            tooltipTitle={action.name}
+          />
+        ))}
+      </SpeedDial>
+    </Box>
+  );
+}
+
+7//////////////////////
+
+
+import { Card, CardMedia, CardContent, Typography } from '@mui/material';
+
+function VideoCard() {
+  return (
+    <Card sx={{ maxWidth: 500 }}>
+      <CardMedia
+        component="video"
+        src="path/to/your/video.mp4"
+        controls // Adds video controls like play, pause, volume, etc.
+        autoPlay
+        loop
+        muted
+      />
+      <CardContent>
+        <Typography variant="h5">Video Title</Typography>
+        <Typography variant="body2" color="text.secondary">
+          This is a video description.
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default VideoCard;
+
+
+/////////////////////////////////////////
+
+
+import * as React from 'react';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+
+export default function ClickableChips() {
+  const handleClick = () => {
+    console.info('You clicked the Chip.');
+  };
+
+  return (
+    <Stack direction="row" spacing={1}>
+      <Chip label="Clickable" onClick={handleClick} />
+      <Chip label="Clickable" variant="outlined" onClick={handleClick} />
+    </Stack>
+  );
+}
+
+
+
+///
+
+
+return (
+  <>
+    <PerspectiveCamera ref={cameraRef} />
+    <OrbitControls makeDefault />
+
+    <directionalLight position={[1, 1, 1]} intensity={1.5} />
+    <ambientLight intensity={0.5} />
+
+    { showBase && (
+      <primitive
+        object={gltf.scene}
+        scale={[0.2, 0.2, 0.2]}
+        onUpdate={(self) => {
+          self.traverse((child) => {
+            if (child.isMesh) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 'skyblue',
+                metalness: 0.5,
+                roughness: 0.4,
+              });
+              child.material.transparent = true;
+              child.material.opacity = 0.9;
+            }
+          });
+        }}
+      />
+    )}
+    
+    { showStructure && (
+      <primitive
+        object={gltfBridge.scene}
+        scale={[0.2, 0.2, 0.2]}
+        onUpdate={(self) => {
+          self.traverse((child) => {
+            if (child.isMesh) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 'green',
+                metalness: 0.6,
+                roughness: 0.3,
+              });
+              child.material.transparent = true;
+              child.material.opacity = 0.9;
+            }
+          });
+        }}
+      />
+    )}
+
+    {/* Other elements */}
+  </>
+);
