@@ -416,6 +416,9 @@ export default function BridgeDesignerPanel() {
         left: { xs: 0, sm: '50%' },
         transform: { xs: 'none', sm: 'translateX(-50%)' },
         width: { xs: '100%', sm: 'min(94vw, 860px)' },
+        maxHeight: { xs: '72vh', sm: 'none' },
+        display: 'flex',
+        flexDirection: 'column',
         ...sharp,
         bgcolor: 'rgba(13,13,13,0.94)', backdropFilter: 'blur(22px)',
         border: `1px solid ${C.outline}`,
@@ -472,7 +475,7 @@ export default function BridgeDesignerPanel() {
         </Box>
 
         {/* Body */}
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', flex: 1, '&::-webkit-scrollbar': { width: '3px' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(96,62,57,0.6)' } }}>
           <Box>
             <input
               ref={fileInputRef}
