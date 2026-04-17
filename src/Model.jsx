@@ -30,6 +30,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import LayersIcon from '@mui/icons-material/Layers';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import ShareIcon from '@mui/icons-material/Share';
 import Slider from 'react-slick';
@@ -38,6 +39,7 @@ import 'slick-carousel/slick/slick-theme.css';
 import { useStore } from './store/useStore.jsx';
 import AgentChat from './components/AgentChat.jsx';
 import BridgeDesignerPanel from './components/BridgeDesignerPanel.jsx';
+import ConstructionTimeline from './components/ConstructionTimeline.jsx';
 import OldFilmLightbox from './components/OldFilmLightbox.jsx';
 import { getUIText } from './content/uiText.js';
 import '@fontsource/manrope/300.css';
@@ -117,6 +119,8 @@ export default function Model() {
   const language = useStore(state => state.language);
   const setLanguage = useStore(state => state.setLanguage);
   const setCameraFeedAvailable = useStore(state => state.setCameraFeedAvailable);
+  const timelineStep = useStore(state => state.timelineStep);
+  const setTimelineStep = useStore(state => state.setTimelineStep);
 
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
@@ -205,6 +209,7 @@ export default function Model() {
 
   const openMode = (mode) => {
     closeOnboarding();
+    setTimelineStep(null);
     if (mode === 'info')   { setShowAccordion(true);  setAgentChatOpen(false); setDesignerOpen(false); }
     if (mode === 'guide')  { setAgentChatOpen(true);  setShowAccordion(false); setDesignerOpen(false); }
     if (mode === 'design') { setDesignerOpen(true);   setAgentChatOpen(false); setShowAccordion(false); }
@@ -390,6 +395,44 @@ export default function Model() {
           </Box>
         </Box>
       )}
+
+      {/* Construction Timeline trigger — top right */}
+      <Box sx={{ position: 'fixed', top: 16, right: 16, zIndex: 9997 }}>
+        <Tooltip title={timelineStep !== null
+          ? (language === 'zh' ? '關閉時間軸' : 'Close timeline')
+          : (language === 'zh' ? '施工時間軸' : 'Construction timeline')}
+          placement="left"
+        >
+          <Chip
+            icon={<LayersIcon sx={{ fontSize: '13px !important', color: `${timelineStep !== null ? C.primaryDeep : C.onSurfaceDim} !important` }} />}
+            label={language === 'zh' ? '時間軸' : 'Timeline'}
+            size="small"
+            onClick={() => {
+              if (timelineStep !== null) {
+                setTimelineStep(null);
+              } else {
+                setTimelineStep(0);
+                setAgentChatOpen(false);
+                setDesignerOpen(false);
+                setShowAccordion(false);
+              }
+            }}
+            sx={{
+              fontFamily: "'Space Grotesk', monospace", fontSize: 10, fontWeight: 500, height: 22,
+              borderRadius: 0,
+              bgcolor: timelineStep !== null ? 'rgba(192,1,0,0.15)' : 'rgba(13,13,13,0.82)',
+              color: timelineStep !== null ? C.primaryDeep : C.onSurfaceDim,
+              border: `1px solid ${timelineStep !== null ? C.primaryDeep : C.outline}`,
+              backdropFilter: 'blur(10px)',
+              letterSpacing: '0.1em',
+              cursor: 'pointer',
+              boxShadow: timelineStep !== null ? `0 0 12px ${C.primaryGlow}` : 'none',
+              transition: 'background-color 0.05s steps(1), border-color 0.05s steps(1)',
+              '&:hover': { borderColor: C.primaryDeep, color: C.primary },
+            }}
+          />
+        </Tooltip>
+      </Box>
 
       {/* Language chip — top left */}
       <Box sx={{ position: 'fixed', top: 16, left: 16, zIndex: 9997 }}>
@@ -736,6 +779,7 @@ export default function Model() {
 
       <AgentChat />
       <BridgeDesignerPanel />
+      <ConstructionTimeline />
 
       {lightboxItem && (
         <OldFilmLightbox

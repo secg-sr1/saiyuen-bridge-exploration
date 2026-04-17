@@ -84,6 +84,10 @@ export let useStore = create((set) => ({
   language: 'en',
   setLanguage: (lang) => set({ language: lang }),
 
+  // Construction timeline: null = off, 0–3 = active step
+  timelineStep: null,
+  setTimelineStep: (step) => set({ timelineStep: step }),
+
   // Info panel open/close (moved to store for cross-component mutual exclusion)
   showAccordion: false,
   setShowAccordion: (open) => set({ showAccordion: open }),

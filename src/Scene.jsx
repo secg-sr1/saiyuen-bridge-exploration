@@ -121,6 +121,7 @@ export default function Scene() {
   const annotations = useStore(state => state.annotations);
   const baseMaterial = useStore(state => state.baseMaterial);
   const structureMaterial = useStore(state => state.structureMaterial);
+  const timelineStep = useStore(state => state.timelineStep);
 
   const { gl } = useThree();
   useEffect(() => { setGl(gl); }, [gl]);
@@ -132,6 +133,8 @@ export default function Scene() {
   const pointerDownPos = useRef({ x: 0, y: 0 });
   const origMatsBase = useRef(null);
   const origMatsStructure = useRef(null);
+  const structureGroupRef = useRef();
+  const animatedExplodeRef = useRef(0);
 
   const [showCard, setShowCard] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -177,6 +180,7 @@ export default function Scene() {
   }, [lightingMode]);
 
   // X-Ray opacity: traverse materials and apply transparency
+  // When timeline is active, override with step-derived values
   useEffect(() => {
     const applyOpacity = (scene, opacity) => {
       scene.traverse((child) => {
@@ -189,9 +193,14 @@ export default function Scene() {
         }
       });
     };
-    applyOpacity(gltf.scene, baseOpacity);
-    applyOpacity(gltfBridge.scene, structureOpacity);
-  }, [baseOpacity, structureOpacity, gltf.scene, gltfBridge.scene]);
+    const effectiveBase = timelineStep === 0 ? 0 : baseOpacity;
+    const effectiveStructure =
+      timelineStep === 0 || timelineStep === 1 ? 0 :
+      timelineStep === 2 ? 0.55 :
+      structureOpacity;
+    applyOpacity(gltf.scene, effectiveBase);
+    applyOpacity(gltfBridge.scene, effectiveStructure);
+  }, [baseOpacity, structureOpacity, timelineStep, gltf.scene, gltfBridge.scene]);
 
   // Store original material properties once per model load (for granite restore)
   useEffect(() => {
@@ -265,36 +274,53 @@ export default function Scene() {
     applyPreset(origMatsStructure, structureMaterial);
   }, [baseMaterial, structureMaterial, gltf.scene, gltfBridge.scene]);
 
-  // Smoothly animate camera toward agent-directed target position
+  // When entering step 2, snap structure high so it descends visually
+  useEffect(() => {
+    if (timelineStep === 2 && structureGroupRef.current) {
+      animatedExplodeRef.current = 4;
+      structureGroupRef.current.position.y = 4;
+    }
+  }, [timelineStep]);
+
+  // Smoothly animate camera toward agent-directed target position + structure Y
   useFrame(() => {
-    if (!cameraTarget || !controlsRef.current) return;
+    // Camera animation (only when a target is active)
+    if (cameraTarget && controlsRef.current) {
+      const controls = controlsRef.current;
+      const camera = controls.object;
 
-    const controls = controlsRef.current;
-    const camera = controls.object;
+      const dx = camera.position.x - controls.target.x;
+      const dy = camera.position.y - controls.target.y;
+      const dz = camera.position.z - controls.target.z;
+      const radius = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    // Preserve current orbit radius
-    const dx = camera.position.x - controls.target.x;
-    const dy = camera.position.y - controls.target.y;
-    const dz = camera.position.z - controls.target.z;
-    const radius = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      const { azimuth, polar } = cameraTarget;
+      const tx = controls.target.x + radius * Math.sin(polar) * Math.sin(azimuth);
+      const ty = controls.target.y + radius * Math.cos(polar);
+      const tz = controls.target.z + radius * Math.sin(polar) * Math.cos(azimuth);
 
-    const { azimuth, polar } = cameraTarget;
-    const tx = controls.target.x + radius * Math.sin(polar) * Math.sin(azimuth);
-    const ty = controls.target.y + radius * Math.cos(polar);
-    const tz = controls.target.z + radius * Math.sin(polar) * Math.cos(azimuth);
+      camera.position.x += (tx - camera.position.x) * 0.07;
+      camera.position.y += (ty - camera.position.y) * 0.07;
+      camera.position.z += (tz - camera.position.z) * 0.07;
+      camera.lookAt(controls.target);
 
-    // Lerp toward target (0.07 ≈ ~20 frames to settle)
-    camera.position.x += (tx - camera.position.x) * 0.07;
-    camera.position.y += (ty - camera.position.y) * 0.07;
-    camera.position.z += (tz - camera.position.z) * 0.07;
-    camera.lookAt(controls.target);
+      const dist = Math.sqrt(
+        (camera.position.x - tx) ** 2 +
+        (camera.position.y - ty) ** 2 +
+        (camera.position.z - tz) ** 2
+      );
+      if (dist < 0.02) setCameraTarget(null);
+    }
 
-    const dist = Math.sqrt(
-      (camera.position.x - tx) ** 2 +
-      (camera.position.y - ty) ** 2 +
-      (camera.position.z - tz) ** 2
-    );
-    if (dist < 0.02) setCameraTarget(null);
+    // Animate structure group Y toward timeline target or normal explodeDistance
+    if (structureGroupRef.current) {
+      const targetY =
+        timelineStep === 2 ? 2 :
+        timelineStep !== null ? 0 :
+        explodeDistance;
+      animatedExplodeRef.current += (targetY - animatedExplodeRef.current) * 0.06;
+      structureGroupRef.current.position.y = animatedExplodeRef.current;
+    }
   });
 
   // Track drag distance to distinguish tap from drag-to-rotate
@@ -330,7 +356,7 @@ export default function Scene() {
       <directionalLight ref={dirLightRef} position={[1, 1, 1]} intensity={1.5} />
       <ambientLight ref={ambLightRef} intensity={0.5} />
 
-      {showBase && (
+      {(showBase || (timelineStep !== null && timelineStep >= 1)) && (
         <group
           onPointerDown={handlePointerDown}
           onClick={handlePartClick('base')}
@@ -339,9 +365,9 @@ export default function Scene() {
         </group>
       )}
 
-      {showStructure && (
+      {(showStructure || (timelineStep !== null && timelineStep >= 2)) && (
         <group
-          position={[0, explodeDistance, 0]}
+          ref={structureGroupRef}
           onPointerDown={handlePointerDown}
           onClick={handlePartClick('structure')}
         >
