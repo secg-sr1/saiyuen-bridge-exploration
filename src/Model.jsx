@@ -413,7 +413,7 @@ export default function Model() {
       {/* Info FAB — bottom right */}
       <Box sx={{
         position: 'fixed',
-        bottom: isMobile && showAccordion ? 'calc(70vh + 12px)' : 8,
+        bottom: isMobile && (showAccordion || agentChatOpen || designerOpen) ? 'calc(70vh + 12px)' : 8,
         right: 16, zIndex: 10000,
         transition: 'bottom 0.05s steps(1)',
       }}>
@@ -508,6 +508,7 @@ export default function Model() {
           boxShadow: `0 0 40px rgba(192,1,0,0.06)`,
           zIndex: 9999,
           overflowY: 'auto', overflowX: 'hidden',
+          pb: { xs: 'env(safe-area-inset-bottom)', sm: 0 },
           animation: 'panelSlide 0.18s steps(6)',
           '@keyframes panelSlide': {
             from: { opacity: 0, transform: 'translateY(12px)' },

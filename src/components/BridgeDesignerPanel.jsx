@@ -475,7 +475,7 @@ export default function BridgeDesignerPanel() {
         </Box>
 
         {/* Body */}
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', flex: 1, '&::-webkit-scrollbar': { width: '3px' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(96,62,57,0.6)' } }}>
+        <Box sx={{ p: 2, pb: { xs: 'max(16px, env(safe-area-inset-bottom))', sm: 2 }, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', flex: 1, '&::-webkit-scrollbar': { width: '3px' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(96,62,57,0.6)' } }}>
           <Box>
             <input
               ref={fileInputRef}
@@ -594,7 +594,7 @@ export default function BridgeDesignerPanel() {
               })}
             </Stack>
 
-            {/* Lighting chips + generate */}
+            {/* Lighting chips */}
             <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap">
               <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 500, fontSize: 9,
                 color: C.onSurfaceFaint, letterSpacing: '0.2em', textTransform: 'uppercase', mr: 0.25 }}>
@@ -622,31 +622,31 @@ export default function BridgeDesignerPanel() {
                   />
                 );
               })}
-
-              {/* Generate CTA */}
-              <Box sx={{ ml: 'auto' }}>
-                <Chip
-                  icon={<AutoAwesomeIcon sx={{ fontSize: '13px !important',
-                    color: anyBusy ? `${C.onSurfaceFaint} !important` : `${C.onSurface} !important` }} />}
-                  label={uploadedLandscape ? text.designer.generateForPhoto(pendingStyles.length) : text.designer.generate(pendingStyles.length)}
-                  onClick={handleGenerate}
-                  disabled={anyBusy}
-                  sx={{
-                    fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 700,
-                    cursor: 'pointer', ...sharp,
-                    bgcolor: anyBusy ? C.surfaceHigh : C.primaryDeep,
-                    color: anyBusy ? C.onSurfaceFaint : '#fff',
-                    border: '1px solid',
-                    borderColor: anyBusy ? C.outline : C.primaryDeep,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                    boxShadow: anyBusy ? 'none' : `0 0 16px ${C.primaryGlow}`,
-                    '&:hover': { bgcolor: anyBusy ? undefined : '#a00000' },
-                    '& .MuiChip-icon': { ml: '6px' },
-                    '&.Mui-disabled': { opacity: 0.4 },
-                  }}
-                />
-              </Box>
             </Stack>
+
+            {/* Generate CTA — own row, always right-aligned */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.75 }}>
+              <Chip
+                icon={<AutoAwesomeIcon sx={{ fontSize: '13px !important',
+                  color: anyBusy ? `${C.onSurfaceFaint} !important` : `${C.onSurface} !important` }} />}
+                label={uploadedLandscape ? text.designer.generateForPhoto(pendingStyles.length) : text.designer.generate(pendingStyles.length)}
+                onClick={handleGenerate}
+                disabled={anyBusy}
+                sx={{
+                  fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 700,
+                  cursor: 'pointer', ...sharp,
+                  bgcolor: anyBusy ? C.surfaceHigh : C.primaryDeep,
+                  color: anyBusy ? C.onSurfaceFaint : '#fff',
+                  border: '1px solid',
+                  borderColor: anyBusy ? C.outline : C.primaryDeep,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  boxShadow: anyBusy ? 'none' : `0 0 16px ${C.primaryGlow}`,
+                  '&:hover': { bgcolor: anyBusy ? undefined : '#a00000' },
+                  '& .MuiChip-icon': { ml: '6px' },
+                  '&.Mui-disabled': { opacity: 0.4 },
+                }}
+              />
+            </Box>
           </Box>
 
           {/* Design cards */}

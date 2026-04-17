@@ -115,9 +115,11 @@ export default function AgentChat() {
   const clearAnnotations = useStore(state => state.clearAnnotations);
   const language = useStore(state => state.language);
   const setShowAccordion = useStore(state => state.setShowAccordion);
+  const showAccordion = useStore(state => state.showAccordion);
   const selectedDesign = useStore(state => state.selectedDesign);
   const setSelectedDesign = useStore(state => state.setSelectedDesign);
   const setDesignerOpen = useStore(state => state.setDesignerOpen);
+  const designerOpen = useStore(state => state.designerOpen);
   const baseMaterial = useStore(state => state.baseMaterial);
   const setBaseMaterial = useStore(state => state.setBaseMaterial);
   const structureMaterial = useStore(state => state.structureMaterial);
@@ -279,7 +281,7 @@ export default function AgentChat() {
       {/* FAB */}
       <Box sx={{
         position: 'fixed',
-        bottom: isMobile && agentChatOpen ? 'calc(70vh + 12px)' : 8,
+        bottom: isMobile && (agentChatOpen || showAccordion || designerOpen) ? 'calc(70vh + 12px)' : 8,
         left: 16,
         zIndex: 10000,
         transition: 'bottom 0.05s steps(1)',
@@ -688,7 +690,8 @@ export default function AgentChat() {
 
           {/* Input row */}
           <Box sx={{
-            px: 2, py: 1.25,
+            px: 2, pt: 1.25,
+            pb: { xs: 'max(10px, env(safe-area-inset-bottom))', sm: 1.25 },
             borderTop: `1px solid ${C.outline}`,
             display: 'flex', gap: 1, alignItems: 'flex-end',
           }}>
