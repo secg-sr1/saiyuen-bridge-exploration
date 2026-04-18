@@ -142,6 +142,7 @@ export default function Model() {
   const selfieOn    = useStore(state => state.selfieOn);
   const setSelfieOn = useStore(state => state.setSelfieOn);
   const selfieStreamRef = useRef(null);
+  const selfieVideoRef  = useRef(null);
   const [feedback, setFeedback] = useState(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [showHint, setShowHint] = useState(true);
@@ -228,21 +229,25 @@ export default function Model() {
   }, [arMode]);
 
   useEffect(() => {
+    let cancelled = false;
     if (selfieOn) {
       navigator.mediaDevices
         .getUserMedia({ video: { facingMode: 'user' }, audio: false })
         .then(stream => {
+          if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
           selfieStreamRef.current = stream;
-          const pip = document.getElementById('selfiePip');
-          if (pip) { pip.srcObject = stream; pip.play().catch(() => {}); }
+          if (selfieVideoRef.current) {
+            selfieVideoRef.current.srcObject = stream;
+            selfieVideoRef.current.play().catch(() => {});
+          }
         })
         .catch(() => setSelfieOn(false));
     } else {
       selfieStreamRef.current?.getTracks().forEach(t => t.stop());
       selfieStreamRef.current = null;
-      const pip = document.getElementById('selfiePip');
-      if (pip) pip.srcObject = null;
+      if (selfieVideoRef.current) selfieVideoRef.current.srcObject = null;
     }
+    return () => { cancelled = true; };
   }, [selfieOn]);
 
   const closeOnboarding = () => {
@@ -357,7 +362,7 @@ export default function Model() {
         }}>
           <Box
             component="video"
-            id="selfiePip"
+            ref={selfieVideoRef}
             autoPlay
             playsInline
             muted
