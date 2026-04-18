@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #000; }
+    .a-loader-title,
+    #aframe-inspector-link,
+    .a-enter-vr,
+    .a-enter-vr-button { display: none !important; }
+  </style>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+</head>
+<body>
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.75;"
+    vr-mode-ui="enabled: false"
+    renderer="antialias: true; logarithmicDepthBuffer: true;"
+    loading-screen="enabled: false"
+  >
+    <a-assets timeout="20000">
+      <a-asset-item id="base"      src="https://raw.githubusercontent.com/secg-sr1/sai-models/refs/heads/main/bidge-01-base-02.glb"></a-asset-item>
+      <a-asset-item id="structure" src="https://raw.githubusercontent.com/secg-sr1/sai-models/refs/heads/main/bidge-01-structure-02.glb"></a-asset-item>
+    </a-assets>
+
+    <a-marker type="pattern" url="/marker.patt">
+      <a-entity gltf-model="#base"      scale="0.2 0.2 0.2" position="0 0 0"   animation-mixer="loop: repeat"></a-entity>
+      <a-entity gltf-model="#structure" scale="0.2 0.2 0.2" position="0 0.4 0" animation-mixer="loop: repeat"></a-entity>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+</body>
+</html>
