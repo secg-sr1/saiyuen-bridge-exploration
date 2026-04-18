@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react';
 import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import CloseIcon from '@mui/icons-material/Close';
 import { useStore } from '../store/useStore';
+import { track } from '../utils/analytics';
 
 const C = {
   surface:        '#131313',
@@ -38,6 +40,18 @@ export default function ConstructionTimeline() {
   const timelineStep    = useStore(s => s.timelineStep);
   const setTimelineStep = useStore(s => s.setTimelineStep);
   const language        = useStore(s => s.language);
+
+  const prevStepRef = useRef(null);
+  useEffect(() => {
+    if (timelineStep !== null && prevStepRef.current === null) {
+      track('timeline_opened', { step: timelineStep });
+    }
+    if (timelineStep !== null && timelineStep !== prevStepRef.current && prevStepRef.current !== null) {
+      track('timeline_step_changed', { step: timelineStep, step_name: STEPS[timelineStep]?.en });
+      if (timelineStep === STEPS.length - 1) track('timeline_completed');
+    }
+    prevStepRef.current = timelineStep;
+  }, [timelineStep]);
 
   if (timelineStep === null) return null;
 

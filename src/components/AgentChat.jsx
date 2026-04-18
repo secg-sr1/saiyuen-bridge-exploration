@@ -27,6 +27,7 @@ import { useStore } from '../store/useStore';
 import { sendMessage } from '../agent/bridgeAgent';
 import { captureScreenshot } from '../utils/screenshot';
 import { getUIText } from '../content/uiText';
+import { track } from '../utils/analytics';
 
 const TOUR_PROMPT = {
   en: 'Start a guided tour of the Saiyuen Bridge. Use move_camera, highlight_part, toggle_layer, set_explode, set_lighting and set_opacity tools as you narrate each step. Cover: 1) overview and history, 2) the foundation arch, 3) upper deck and railings, 4) construction sequence (explode view), 5) cultural meaning. End with the bridge reassembled and lighting restored to day.',
@@ -165,6 +166,7 @@ export default function AgentChat() {
       return;
     }
 
+    track('voice_input_used', { language });
     const recognition = new SpeechRecognition();
     recognition.lang = language === 'zh' ? 'zh-TW' : 'en-US';
     recognition.interimResults = false;
@@ -190,11 +192,13 @@ export default function AgentChat() {
     link.href = dataUrl;
     link.download = 'saiyuen-bridge.png';
     link.click();
+    track('screenshot_captured');
     setFeedback({ severity: 'success', message: text.chat.screenshotSuccess });
   };
 
   const handleTour = () => {
     setError(null);
+    track('guided_tour_started', { language });
     sendMessage(TOUR_PROMPT[language] ?? TOUR_PROMPT.en, { label: text.chat.startTour }).catch((err) => {
       setError(text.chat.agentError);
       console.error(err);
@@ -232,6 +236,7 @@ export default function AgentChat() {
     setInput('');
     setError(null);
 
+    track('chat_message_sent', { message_count: chatHistory.length + 1 });
     try {
       await sendMessage(msg);
     } catch (err) {
@@ -258,6 +263,7 @@ export default function AgentChat() {
             onClick={() => {
               const next = !agentChatOpen;
               setAgentChatOpen(next);
+              track(next ? 'chat_opened' : 'chat_closed');
               if (next) {
                 setDesignerOpen(false);
                 setShowAccordion(false);
@@ -349,7 +355,7 @@ export default function AgentChat() {
                 <Tooltip title={text.chat.clearConversation} placement="left">
                   <IconButton
                     size="small"
-                    onClick={clearChat}
+                    onClick={() => { track('chat_cleared'); clearChat(); }}
                     sx={{ ...sharp, color: C.onSurfaceFaint, '&:hover': { color: C.onSurface, bgcolor: 'rgba(192,1,0,0.1)' } }}
                   >
                     <DeleteOutlineIcon fontSize="small" />
@@ -397,9 +403,9 @@ export default function AgentChat() {
                     icon={<AutoAwesomeIcon sx={{ color: `${C.outlineStrong} !important`, fontSize: 13 }} />}
                     label={text.chat.designBridge}
                     size="small"
-                    onClick={() => handleSend(language === 'zh'
+                    onClick={() => { track('design_bridge_clicked', { language }); handleSend(language === 'zh'
                       ? '為這片景觀產生3個超真實橋樑設計方案，顯示所有風格。'
-                      : 'Generate 3 hyperrealistic bridge design alternatives for this landscape. Show all styles.')}
+                      : 'Generate 3 hyperrealistic bridge design alternatives for this landscape. Show all styles.'); }}
                     disabled={isAgentThinking}
                     sx={{
                       fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 500,
@@ -564,7 +570,7 @@ export default function AgentChat() {
                     key={mat}
                     label={MATERIAL_LABEL[mat]?.[language] ?? MATERIAL_LABEL[mat]?.en}
                     size="small"
-                    onClick={() => setActiveMaterial(active ? 'granite' : mat)}
+                    onClick={() => { const next = active ? 'granite' : mat; track('material_selected', { material: next, part: selectedPart }); setActiveMaterial(next); }}
                     sx={{
                       fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 500,
                       ...sharp,
@@ -615,7 +621,7 @@ export default function AgentChat() {
                           key={mat}
                           label={MATERIAL_LABEL[mat]?.[language] ?? MATERIAL_LABEL[mat]?.en}
                           size="small"
-                          onClick={() => setActiveMaterial(activeMaterial === mat ? 'granite' : mat)}
+                          onClick={() => { const next = activeMaterial === mat ? 'granite' : mat; track('material_selected', { material: next, part: selectedPart }); setActiveMaterial(next); }}
                           sx={{
                             fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 500,
                             ...sharp,

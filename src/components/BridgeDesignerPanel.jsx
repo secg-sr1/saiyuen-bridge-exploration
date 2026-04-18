@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -26,6 +26,7 @@ import { generateBridgeDesigns, generateFromLandscape, DESIGN_STYLES, LIGHTING_M
 import { captureComposite } from '../utils/screenshot';
 import { getUIText } from '../content/uiText';
 import OldFilmLightbox from './OldFilmLightbox';
+import { track } from '../utils/analytics';
 
 // Obsidian Decay palette tokens
 const C = {
@@ -240,6 +241,10 @@ export default function BridgeDesignerPanel() {
   const [feedback, setFeedback] = useState(null);
   const [lightboxItem, setLightboxItem] = useState(null); // { url, label }
 
+  useEffect(() => {
+    if (designerOpen) track('designer_opened');
+  }, [designerOpen]);
+
   const toggleStyle = (id) => {
     setPendingStyles(prev =>
       prev.includes(id)
@@ -252,6 +257,7 @@ export default function BridgeDesignerPanel() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    track('photo_uploaded');
     const reader = new FileReader();
     reader.onload = (ev) => {
       setUploadedLandscape(ev.target?.result);
@@ -276,11 +282,13 @@ export default function BridgeDesignerPanel() {
       return;
     }
 
+    track('ar_captured');
     setUploadedLandscape(dataUrl);
     setCaptureSource('ar');
   };
 
   const handleGenerate = () => {
+    track('design_generated', { styles: pendingStyles.join(','), lighting: pendingLighting, from_photo: !!uploadedLandscape });
     setDesignConfig({ styleIds: pendingStyles, lighting: pendingLighting });
     setDesignOptions([]);
     setIsGeneratingDesigns(true);
@@ -308,6 +316,7 @@ export default function BridgeDesignerPanel() {
   };
 
   const handleRegenerate = (option) => {
+    track('design_regenerated', { style: option.id });
     setRegeneratingDesignId(option.id);
     generateBridgeDesigns([option.id], pendingLighting)
       .then(([fresh]) => {
@@ -323,7 +332,9 @@ export default function BridgeDesignerPanel() {
   };
 
   const handleSelectCard = (option) => {
-    setSelectedDesign(selectedDesign?.id === option.id ? null : option);
+    const isDeselect = selectedDesign?.id === option.id;
+    if (!isDeselect) track('design_selected', { style: option.id, label: option.label });
+    setSelectedDesign(isDeselect ? null : option);
   };
 
   // ── Mini bar (panel closed, design active) ────────────────────────────────
