@@ -28,6 +28,7 @@ import {
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -137,7 +138,9 @@ export default function Model() {
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
 
-  const [arMode, setArMode] = useState(false);
+  const [arMode, setArMode]     = useState(false);
+  const [selfieOn, setSelfieOn] = useState(false);
+  const selfieStreamRef = useRef(null);
   const [feedback, setFeedback] = useState(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [showHint, setShowHint] = useState(true);
@@ -222,6 +225,24 @@ export default function Model() {
     if (arMode) video.pause();
     else video.play().catch(() => {});
   }, [arMode]);
+
+  useEffect(() => {
+    if (selfieOn) {
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: 'user' }, audio: false })
+        .then(stream => {
+          selfieStreamRef.current = stream;
+          const pip = document.getElementById('selfiePip');
+          if (pip) { pip.srcObject = stream; pip.play().catch(() => {}); }
+        })
+        .catch(() => setSelfieOn(false));
+    } else {
+      selfieStreamRef.current?.getTracks().forEach(t => t.stop());
+      selfieStreamRef.current = null;
+      const pip = document.getElementById('selfiePip');
+      if (pip) pip.srcObject = null;
+    }
+  }, [selfieOn]);
 
   const closeOnboarding = () => {
     window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
@@ -309,6 +330,45 @@ export default function Model() {
         autoPlay
         playsInline
       />
+
+      {/* Selfie PiP — bottom-right, only when SELF is active */}
+      {selfieOn && (
+        <Box sx={{
+          position: 'fixed', bottom: 20, right: 16,
+          width: 108, height: 144,
+          zIndex: 9998,
+          border: `1px solid ${C.primaryDeep}`,
+          boxShadow: `0 0 14px rgba(192,1,0,0.3)`,
+          bgcolor: '#0d0d0d',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""', position: 'absolute', top: 0, left: 0,
+            width: 12, height: 12,
+            borderTop: `2px solid ${C.primaryDeep}`,
+            borderLeft: `2px solid ${C.primaryDeep}`,
+          },
+          '&::after': {
+            content: '""', position: 'absolute', bottom: 0, right: 0,
+            width: 12, height: 12,
+            borderBottom: `2px solid ${C.primaryDeep}`,
+            borderRight: `2px solid ${C.primaryDeep}`,
+          },
+        }}>
+          <Box
+            component="video"
+            id="selfiePip"
+            autoPlay
+            playsInline
+            muted
+            sx={{
+              width: '100%', height: '100%',
+              objectFit: 'cover',
+              transform: 'scaleX(-1)',
+              display: 'block',
+            }}
+          />
+        </Box>
+      )}
 
       {/* Drag-to-rotate hint */}
       {showHint && cameraReady && !showOnboarding && (
@@ -547,7 +607,7 @@ export default function Model() {
         </Box>
       )}
 
-      {/* Top-left chips: Language · AR toggle */}
+      {/* Top-left chips: Language · AR · SELF */}
       <Stack direction="row" spacing={0.75} sx={{ position: 'fixed', top: 16, left: 16, zIndex: 9997 }}>
         <Chip
           label={text.model.languageToggle}
@@ -580,6 +640,24 @@ export default function Model() {
             boxShadow: arMode ? `0 0 12px ${C.primaryGlow}` : 'none',
             transition: 'background-color 0.05s steps(1), border-color 0.05s steps(1)',
             '&:hover': { borderColor: C.primaryDeep, color: arMode ? '#fff' : C.primary },
+          }}
+        />
+        <Chip
+          icon={<PersonOutlineIcon sx={{ fontSize: '13px !important', color: `${selfieOn ? C.primaryDeep : C.onSurfaceDim} !important` }} />}
+          label="SELF"
+          size="small"
+          onClick={() => setSelfieOn(v => !v)}
+          sx={{
+            fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 500, height: 22, borderRadius: 0,
+            bgcolor: selfieOn ? 'rgba(192,1,0,0.18)' : 'rgba(13,13,13,0.82)',
+            color: selfieOn ? C.primaryDeep : C.onSurfaceDim,
+            border: `1px solid ${selfieOn ? C.primaryDeep : C.outline}`,
+            backdropFilter: 'blur(10px)',
+            letterSpacing: '0.1em',
+            cursor: 'pointer',
+            boxShadow: selfieOn ? `0 0 12px ${C.primaryGlow}` : 'none',
+            transition: 'background-color 0.05s steps(1), border-color 0.05s steps(1)',
+            '&:hover': { borderColor: C.primaryDeep, color: selfieOn ? C.primaryDeep : C.primary },
           }}
         />
       </Stack>

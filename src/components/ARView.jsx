@@ -2,7 +2,6 @@ import { Box, Chip } from '@mui/material';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 
 const C = {
-  outline:     'rgba(96,62,57,0.5)',
   primaryDeep: '#c00100',
   primaryGlow: 'rgba(192,1,0,0.35)',
   primary:     '#ffb4a8',
@@ -12,14 +11,15 @@ const FONT_LABEL = "'Space Grotesk', monospace";
 export default function ARView({ onClose }) {
   return (
     <Box sx={{ position: 'fixed', inset: 0, zIndex: 99999, bgcolor: '#000' }}>
+
       <iframe
         src="/ar.html"
-        style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', display: 'block' }}
         allow="camera; microphone"
         title="AR View"
       />
 
-      {/* Exit chip — rendered outside the iframe so it always stays on top */}
+      {/* Only the exit chip — no SELF here */}
       <Box sx={{ position: 'fixed', top: 16, left: 16, zIndex: 100000 }}>
         <Chip
           icon={<ViewInArIcon sx={{ fontSize: '13px !important', color: `${C.primaryDeep} !important` }} />}
@@ -40,6 +40,7 @@ export default function ARView({ onClose }) {
           }}
         />
       </Box>
+
     </Box>
   );
 }
