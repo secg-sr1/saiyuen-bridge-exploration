@@ -138,8 +138,9 @@ export default function Model() {
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
 
-  const [arMode, setArMode]     = useState(false);
-  const [selfieOn, setSelfieOn] = useState(false);
+  const [arMode, setArMode] = useState(false);
+  const selfieOn    = useStore(state => state.selfieOn);
+  const setSelfieOn = useStore(state => state.setSelfieOn);
   const selfieStreamRef = useRef(null);
   const [feedback, setFeedback] = useState(null);
   const [cameraReady, setCameraReady] = useState(false);

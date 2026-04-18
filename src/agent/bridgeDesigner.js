@@ -7,7 +7,11 @@ const client = new OpenAI({
 
 const PLACE =
   'Sai Kung Country Park, Hong Kong, lush tropical forest, clear mountain stream, heritage valley landscape, ' +
-  'photorealistic, ultra-detailed, 8K, cinematic architectural photography, no people';
+  'photorealistic, ultra-detailed, 8K, cinematic architectural photography';
+
+const PERSON_DETAIL =
+  'one solitary figure walking across the bridge, seen from a tasteful distance, small relative to the structure, ' +
+  'back to the viewer, naturally integrated into the scene, adding a sense of human scale';
 
 // Lighting mood injected into every prompt
 export const LIGHTING_MODES = [
@@ -59,13 +63,14 @@ export const DESIGN_STYLES = [
 /**
  * Build a rich DALL-E 3 prompt for a given style + lighting combination.
  */
-function buildPrompt(style, lighting) {
+function buildPrompt(style, lighting, withPerson = false) {
   return (
     `Hyperrealistic architectural visualization: ${style.desc}. ` +
     `Setting: ${PLACE}. ` +
     `Lighting: ${lighting.desc}. ` +
     `Composition: wide-angle view showing the bridge spanning the stream with forest on both banks, ` +
-    `reflections in the water, photorealistic render quality, no watermarks, no text.`
+    `reflections in the water, photorealistic render quality, no watermarks, no text. ` +
+    (withPerson ? `Include ${PERSON_DETAIL}.` : 'No people.')
   );
 }
 
@@ -75,7 +80,7 @@ function buildPrompt(style, lighting) {
  * @param {string}   lightingId - one of LIGHTING_MODES ids, default 'golden'
  * @returns {Promise<Array<{id, label, url}>>}
  */
-export async function generateBridgeDesigns(styleIds = null, lightingId = 'golden') {
+export async function generateBridgeDesigns(styleIds = null, lightingId = 'golden', withPerson = false) {
   const lighting = LIGHTING_MODES.find(l => l.id === lightingId) ?? LIGHTING_MODES[2];
   const styles = (styleIds?.length)
     ? DESIGN_STYLES.filter(s => styleIds.includes(s.id))
@@ -85,7 +90,7 @@ export async function generateBridgeDesigns(styleIds = null, lightingId = 'golde
     styles.map(async (style) => {
       const response = await client.images.generate({
         model: 'dall-e-3',
-        prompt: buildPrompt(style, lighting),
+        prompt: buildPrompt(style, lighting, withPerson),
         n: 1,
         size: '1792x1024',
         quality: 'hd',
@@ -112,7 +117,7 @@ export async function generateBridgeDesigns(styleIds = null, lightingId = 'golde
  * @param {string}   lightingId   - lighting mood id
  * @returns {Promise<Array<{id, label, url, fromPhoto: true}>>}
  */
-export async function generateFromLandscape(imageDataUrl, styleIds, lightingId = 'golden') {
+export async function generateFromLandscape(imageDataUrl, styleIds, lightingId = 'golden', withPerson = false) {
   const lighting = LIGHTING_MODES.find(l => l.id === lightingId) ?? LIGHTING_MODES[2];
   const styles = (styleIds?.length)
     ? DESIGN_STYLES.filter(s => styleIds.includes(s.id))
@@ -150,7 +155,8 @@ export async function generateFromLandscape(imageDataUrl, styleIds, lightingId =
         `The bridge is placed into this exact landscape: ${landscapeDesc} ` +
         `Lighting mood: ${lighting.desc}. ` +
         `Wide-angle composition showing the bridge naturally integrated into the scene, ` +
-        `matching the perspective of the original photo, photorealistic quality, no text, no watermarks.`;
+        `matching the perspective of the original photo, photorealistic quality, no text, no watermarks. ` +
+        (withPerson ? `Include ${PERSON_DETAIL}.` : 'No people.');
 
       const response = await client.images.generate({
         model: 'dall-e-3',

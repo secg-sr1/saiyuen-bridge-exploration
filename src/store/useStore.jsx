@@ -73,6 +73,9 @@ export let useStore = create((set) => ({
   cameraFeedAvailable: false,
   setCameraFeedAvailable: (available) => set({ cameraFeedAvailable: available }),
 
+  selfieOn: false,
+  setSelfieOn: (on) => set({ selfieOn: on }),
+
   // 3D annotation pins placed by the agent: [{ id, label, position: [x,y,z] }]
   annotations: [],
   addAnnotation: (annotation) => set((state) => ({

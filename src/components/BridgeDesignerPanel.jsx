@@ -228,6 +228,7 @@ export default function BridgeDesignerPanel() {
   const showAccordion = useStore(s => s.showAccordion);
   const setShowAccordion = useStore(s => s.setShowAccordion);
   const cameraFeedAvailable = useStore(s => s.cameraFeedAvailable);
+  const selfieOn = useStore(s => s.selfieOn);
   const language = useStore(s => s.language);
 
   const isMobile = useMediaQuery('(max-width:834px)');
@@ -296,10 +297,10 @@ export default function BridgeDesignerPanel() {
     let generation;
     if (uploadedLandscape) {
       setIsAnalysing(true);
-      generation = generateFromLandscape(uploadedLandscape, pendingStyles, pendingLighting)
+      generation = generateFromLandscape(uploadedLandscape, pendingStyles, pendingLighting, selfieOn)
         .finally(() => setIsAnalysing(false));
     } else {
-      generation = generateBridgeDesigns(pendingStyles, pendingLighting);
+      generation = generateBridgeDesigns(pendingStyles, pendingLighting, selfieOn);
     }
 
     generation
