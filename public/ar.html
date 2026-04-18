@@ -15,6 +15,14 @@
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
+  <!-- DEBUG overlay -->
+  <div id="dbg" style="
+    position:fixed; top:0; left:0; right:0;
+    background:rgba(0,0,0,0.7); color:#0f0;
+    font:11px monospace; padding:6px 10px;
+    z-index:9999; pointer-events:none;
+  ">Loading A-Frame…</div>
+
   <a-scene
     embedded
     arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.75;"
@@ -27,12 +35,36 @@
       <a-asset-item id="structure" src="https://raw.githubusercontent.com/secg-sr1/sai-models/refs/heads/main/bidge-01-structure-02.glb"></a-asset-item>
     </a-assets>
 
-    <a-marker type="pattern" url="/marker.patt">
+    <a-marker type="pattern" url="/marker.patt"
+      id="marker"
+      emitevents="true"
+    >
+      <!-- Red box: visible as soon as marker is detected, no model loading needed -->
+      <a-box position="0 0.5 0" color="#c00100" scale="0.5 0.5 0.5"></a-box>
       <a-entity gltf-model="#base"      scale="0.2 0.2 0.2" position="0 0 0"   animation-mixer="loop: repeat"></a-entity>
       <a-entity gltf-model="#structure" scale="0.2 0.2 0.2" position="0 0.4 0" animation-mixer="loop: repeat"></a-entity>
     </a-marker>
 
     <a-entity camera></a-entity>
   </a-scene>
+
+  <script>
+    const dbg = document.getElementById('dbg');
+    const log = (msg, color) => { dbg.style.color = color || '#0f0'; dbg.textContent = msg; };
+
+    document.querySelector('a-scene').addEventListener('loaded', () => log('AR.js ready — point at marker'));
+
+    document.querySelector('a-scene').addEventListener('camera-init', () => log('Camera OK'));
+    document.querySelector('a-scene').addEventListener('camera-error', () => log('Camera FAILED — check permissions', '#f00'));
+
+    const marker = document.getElementById('marker');
+    marker.addEventListener('markerFound',  () => log('Marker FOUND ✓', '#0f0'));
+    marker.addEventListener('markerLost',   () => log('Marker lost — reposition', '#ff0'));
+
+    // Report .patt fetch result
+    fetch('/marker.patt')
+      .then(r => r.ok ? log('marker.patt loaded OK') : log('marker.patt fetch failed: ' + r.status, '#f00'))
+      .catch(e => log('marker.patt error: ' + e, '#f00'));
+  </script>
 </body>
 </html>
