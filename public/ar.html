@@ -10,18 +10,97 @@
     #aframe-inspector-link,
     .a-enter-vr,
     .a-enter-vr-button { display: none !important; }
+
+    /* ── Debug bar ── */
+    #dbg {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.7); color: #0f0;
+      font: 11px monospace; padding: 6px 10px;
+      z-index: 9999; pointer-events: none;
+    }
+
+    /* ── Selfie PiP ── */
+    #selfie {
+      position: fixed;
+      bottom: 56px; right: 14px;
+      width: 108px; height: 144px;
+      object-fit: cover;
+      transform: scaleX(-1);        /* mirror like a selfie cam */
+      border: 1px solid rgba(192,1,0,0.55);
+      box-shadow: 0 0 14px rgba(192,1,0,0.25), inset 0 0 0 1px rgba(255,180,168,0.08);
+      display: none;
+      z-index: 9998;
+      background: #0d0d0d;
+    }
+    /* Architectural corner accents on the PiP */
+    #selfie-frame {
+      position: fixed;
+      bottom: 56px; right: 14px;
+      width: 108px; height: 144px;
+      display: none;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    #selfie-frame::before,
+    #selfie-frame::after {
+      content: '';
+      position: absolute;
+      width: 12px; height: 12px;
+      border-color: #c00100;
+      border-style: solid;
+    }
+    #selfie-frame::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    #selfie-frame::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+    /* ── Bottom chip row ── */
+    #chips {
+      position: fixed; bottom: 14px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; gap: 6px;
+      z-index: 9999;
+    }
+    .chip {
+      display: flex; align-items: center; gap: 4px;
+      height: 22px; padding: 0 10px;
+      background: rgba(13,13,13,0.88);
+      border: 1px solid rgba(96,62,57,0.5);
+      color: rgba(229,226,225,0.45);
+      font-family: 'Space Grotesk', monospace;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: background 0.05s steps(1), border-color 0.05s steps(1), color 0.05s steps(1);
+      user-select: none;
+    }
+    .chip.active {
+      background: rgba(192,1,0,0.18);
+      border-color: #c00100;
+      color: #c00100;
+      box-shadow: 0 0 10px rgba(192,1,0,0.3);
+    }
+    .chip svg { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
   </style>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
-  <!-- DEBUG overlay -->
-  <div id="dbg" style="
-    position:fixed; top:0; left:0; right:0;
-    background:rgba(0,0,0,0.7); color:#0f0;
-    font:11px monospace; padding:6px 10px;
-    z-index:9999; pointer-events:none;
-  ">Loading A-Frame…</div>
+
+  <!-- Debug bar -->
+  <div id="dbg">Loading A-Frame…</div>
+
+  <!-- Selfie PiP video -->
+  <video id="selfie" autoplay playsinline muted></video>
+  <div id="selfie-frame"></div>
+
+  <!-- Bottom chip row -->
+  <div id="chips">
+    <div class="chip" id="selfieBtn" title="Toggle front camera">
+      <!-- person icon -->
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      SELF
+    </div>
+  </div>
 
   <a-scene
     embedded
@@ -35,14 +114,14 @@
       <a-asset-item id="structure" src="https://raw.githubusercontent.com/secg-sr1/sai-models/refs/heads/main/bidge-01-structure-02.glb"></a-asset-item>
     </a-assets>
 
-    <!-- Custom marker (X logo) -->
+    <!-- Custom X-logo marker -->
     <a-marker type="pattern" url="/marker.patt" id="marker" emitevents="true">
       <a-box position="0 0.5 0" color="#c00100" scale="0.5 0.5 0.5"></a-box>
-      <a-entity gltf-model="#base"      scale="0.2 0.2 0.2" position="0 0 0"   animation-mixer="loop: repeat"></a-entity>
-      <a-entity gltf-model="#structure" scale="0.2 0.2 0.2" position="0 0.4 0" animation-mixer="loop: repeat"></a-entity>
+      <a-entity gltf-model="#base"      scale="0.2 0.2 0.2" position="0 0    0" animation-mixer="loop: repeat"></a-entity>
+      <a-entity gltf-model="#structure" scale="0.2 0.2 0.2" position="0 0.4  0" animation-mixer="loop: repeat"></a-entity>
     </a-marker>
 
-    <!-- Hiro fallback: show green box so we know detection itself works -->
+    <!-- Hiro fallback (debug) -->
     <a-marker preset="hiro" id="hiro" emitevents="true">
       <a-box position="0 0.5 0" color="#00ff00" scale="0.5 0.5 0.5"></a-box>
     </a-marker>
@@ -51,26 +130,52 @@
   </a-scene>
 
   <script>
+    // ── Debug bar ──────────────────────────────────────────────
     const dbg = document.getElementById('dbg');
     const log = (msg, color) => { dbg.style.color = color || '#0f0'; dbg.textContent = msg; };
 
     document.querySelector('a-scene').addEventListener('loaded', () => log('AR.js ready — point at marker'));
-
-    document.querySelector('a-scene').addEventListener('camera-init', () => log('Camera OK'));
     document.querySelector('a-scene').addEventListener('camera-error', () => log('Camera FAILED — check permissions', '#f00'));
 
-    const marker = document.getElementById('marker');
-    marker.addEventListener('markerFound',  () => log('Custom marker FOUND ✓', '#0f0'));
-    marker.addEventListener('markerLost',   () => log('Custom marker lost — reposition', '#ff0'));
+    document.getElementById('marker').addEventListener('markerFound', () => log('Marker FOUND ✓', '#0f0'));
+    document.getElementById('marker').addEventListener('markerLost',  () => log('AR.js ready — point at marker', '#ff0'));
+    document.getElementById('hiro').addEventListener('markerFound',   () => log('Hiro detected — custom .patt may need regeneration', '#ff0'));
 
-    const hiro = document.getElementById('hiro');
-    hiro.addEventListener('markerFound',  () => log('Hiro FOUND ✓ — custom .patt is the problem', '#ff0'));
-    hiro.addEventListener('markerLost',   () => {});
-
-    // Report .patt fetch result
     fetch('/marker.patt')
-      .then(r => r.ok ? log('marker.patt loaded OK') : log('marker.patt fetch failed: ' + r.status, '#f00'))
+      .then(r => r.ok ? null : log('marker.patt not found (' + r.status + ')', '#f00'))
       .catch(e => log('marker.patt error: ' + e, '#f00'));
+
+    // ── Front camera (selfie PiP) ──────────────────────────────
+    const selfieVideo  = document.getElementById('selfie');
+    const selfieFrame  = document.getElementById('selfie-frame');
+    const selfieBtn    = document.getElementById('selfieBtn');
+    let frontStream    = null;
+
+    selfieBtn.addEventListener('click', async () => {
+      if (frontStream) {
+        // Turn off
+        frontStream.getTracks().forEach(t => t.stop());
+        frontStream = null;
+        selfieVideo.srcObject = null;
+        selfieVideo.style.display  = 'none';
+        selfieFrame.style.display  = 'none';
+        selfieBtn.classList.remove('active');
+      } else {
+        // Turn on
+        try {
+          frontStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 426 } },
+            audio: false,
+          });
+          selfieVideo.srcObject = frontStream;
+          selfieVideo.style.display = 'block';
+          selfieFrame.style.display = 'block';
+          selfieBtn.classList.add('active');
+        } catch (e) {
+          log('Front camera failed: ' + e.message, '#f00');
+        }
+      }
+    });
   </script>
 </body>
 </html>
