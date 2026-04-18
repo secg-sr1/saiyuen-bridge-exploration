@@ -229,24 +229,19 @@ export default function Model() {
   }, [arMode]);
 
   useEffect(() => {
+    if (!selfieOn) return;
     let cancelled = false;
-    if (selfieOn) {
-      navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: 'user' }, audio: false })
-        .then(stream => {
-          if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
-          selfieStreamRef.current = stream;
-          if (selfieVideoRef.current) {
-            selfieVideoRef.current.srcObject = stream;
-            selfieVideoRef.current.play().catch(() => {});
-          }
-        })
-        .catch(() => setSelfieOn(false));
-    } else {
-      if (selfieVideoRef.current) selfieVideoRef.current.srcObject = null;
-      selfieStreamRef.current?.getTracks().forEach(t => t.stop());
-      selfieStreamRef.current = null;
-    }
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then(stream => {
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+        selfieStreamRef.current = stream;
+        if (selfieVideoRef.current) {
+          selfieVideoRef.current.srcObject = stream;
+          selfieVideoRef.current.play().catch(() => {});
+        }
+      })
+      .catch(() => setSelfieOn(false));
     return () => { cancelled = true; };
   }, [selfieOn]);
 
@@ -651,7 +646,16 @@ export default function Model() {
           icon={<PersonOutlineIcon sx={{ fontSize: '13px !important', color: `${selfieOn ? C.primaryDeep : C.onSurfaceDim} !important` }} />}
           label="SELF"
           size="small"
-          onClick={() => setSelfieOn(v => !v)}
+          onClick={() => {
+            if (selfieOn) {
+              if (selfieVideoRef.current) selfieVideoRef.current.srcObject = null;
+              selfieStreamRef.current?.getTracks().forEach(t => t.stop());
+              selfieStreamRef.current = null;
+              setSelfieOn(false);
+            } else {
+              setSelfieOn(true);
+            }
+          }}
           sx={{
             fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 500, height: 22, borderRadius: 0,
             bgcolor: selfieOn ? 'rgba(192,1,0,0.18)' : 'rgba(13,13,13,0.82)',
