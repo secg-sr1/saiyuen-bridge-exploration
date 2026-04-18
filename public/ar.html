@@ -25,7 +25,7 @@
 
   <a-scene
     embedded
-    arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.75;"
+    arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.5; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
     vr-mode-ui="enabled: false"
     renderer="antialias: true; logarithmicDepthBuffer: true;"
     loading-screen="enabled: false"
@@ -35,14 +35,16 @@
       <a-asset-item id="structure" src="https://raw.githubusercontent.com/secg-sr1/sai-models/refs/heads/main/bidge-01-structure-02.glb"></a-asset-item>
     </a-assets>
 
-    <a-marker type="pattern" url="/marker.patt"
-      id="marker"
-      emitevents="true"
-    >
-      <!-- Red box: visible as soon as marker is detected, no model loading needed -->
+    <!-- Custom marker (X logo) -->
+    <a-marker type="pattern" url="/marker.patt" id="marker" emitevents="true">
       <a-box position="0 0.5 0" color="#c00100" scale="0.5 0.5 0.5"></a-box>
       <a-entity gltf-model="#base"      scale="0.2 0.2 0.2" position="0 0 0"   animation-mixer="loop: repeat"></a-entity>
       <a-entity gltf-model="#structure" scale="0.2 0.2 0.2" position="0 0.4 0" animation-mixer="loop: repeat"></a-entity>
+    </a-marker>
+
+    <!-- Hiro fallback: show green box so we know detection itself works -->
+    <a-marker preset="hiro" id="hiro" emitevents="true">
+      <a-box position="0 0.5 0" color="#00ff00" scale="0.5 0.5 0.5"></a-box>
     </a-marker>
 
     <a-entity camera></a-entity>
@@ -58,8 +60,12 @@
     document.querySelector('a-scene').addEventListener('camera-error', () => log('Camera FAILED — check permissions', '#f00'));
 
     const marker = document.getElementById('marker');
-    marker.addEventListener('markerFound',  () => log('Marker FOUND ✓', '#0f0'));
-    marker.addEventListener('markerLost',   () => log('Marker lost — reposition', '#ff0'));
+    marker.addEventListener('markerFound',  () => log('Custom marker FOUND ✓', '#0f0'));
+    marker.addEventListener('markerLost',   () => log('Custom marker lost — reposition', '#ff0'));
+
+    const hiro = document.getElementById('hiro');
+    hiro.addEventListener('markerFound',  () => log('Hiro FOUND ✓ — custom .patt is the problem', '#ff0'));
+    hiro.addEventListener('markerLost',   () => {});
 
     // Report .patt fetch result
     fetch('/marker.patt')
