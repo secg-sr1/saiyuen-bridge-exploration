@@ -28,6 +28,7 @@ import {
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import GradientIcon from '@mui/icons-material/Gradient';
@@ -41,6 +42,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useStore } from './store/useStore.jsx';
 import AgentChat from './components/AgentChat.jsx';
+import ARView from './components/ARView.jsx';
 import BridgeDesignerPanel from './components/BridgeDesignerPanel.jsx';
 import ConstructionTimeline from './components/ConstructionTimeline.jsx';
 import OldFilmLightbox from './components/OldFilmLightbox.jsx';
@@ -135,6 +137,7 @@ export default function Model() {
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
 
+  const [arMode, setArMode] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [showHint, setShowHint] = useState(true);
@@ -212,6 +215,13 @@ export default function Model() {
   useEffect(() => {
     sliderRef.current?.slickGoTo(activeSlide);
   }, [activeSlide]);
+
+  useEffect(() => {
+    const video = document.getElementById('videoBackground');
+    if (!video) return;
+    if (arMode) video.pause();
+    else video.play().catch(() => {});
+  }, [arMode]);
 
   const closeOnboarding = () => {
     window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
@@ -537,8 +547,8 @@ export default function Model() {
         </Box>
       )}
 
-      {/* Language chip — top left */}
-      <Box sx={{ position: 'fixed', top: 16, left: 16, zIndex: 9997 }}>
+      {/* Top-left chips: Language · AR toggle */}
+      <Stack direction="row" spacing={0.75} sx={{ position: 'fixed', top: 16, left: 16, zIndex: 9997 }}>
         <Chip
           label={text.model.languageToggle}
           size="small"
@@ -554,7 +564,25 @@ export default function Model() {
             '&:hover': { borderColor: C.outlineStrong, color: C.onSurface },
           }}
         />
-      </Box>
+        <Chip
+          icon={<ViewInArIcon sx={{ fontSize: '13px !important', color: `${arMode ? '#fff' : C.onSurfaceDim} !important` }} />}
+          label="AR"
+          size="small"
+          onClick={() => setArMode(v => !v)}
+          sx={{
+            fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 500, height: 22, borderRadius: 0,
+            bgcolor: arMode ? C.primaryDeep : 'rgba(13,13,13,0.82)',
+            color: arMode ? '#fff' : C.onSurfaceDim,
+            border: `1px solid ${arMode ? C.primaryDeep : C.outline}`,
+            backdropFilter: 'blur(10px)',
+            letterSpacing: '0.1em',
+            cursor: 'pointer',
+            boxShadow: arMode ? `0 0 12px ${C.primaryGlow}` : 'none',
+            transition: 'background-color 0.05s steps(1), border-color 0.05s steps(1)',
+            '&:hover': { borderColor: C.primaryDeep, color: arMode ? '#fff' : C.primary },
+          }}
+        />
+      </Stack>
 
       {/* Info FAB — bottom right */}
       <Box sx={{
@@ -995,6 +1023,8 @@ export default function Model() {
           <Scene />
         </Canvas>
       </Suspense>
+
+      {arMode && <ARView onClose={() => setArMode(false)} />}
     </ThemeProvider>
   );
 }
