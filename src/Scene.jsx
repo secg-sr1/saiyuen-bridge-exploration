@@ -6,10 +6,20 @@ import { useLoader, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Html } from '@react-three/drei';
 import { setGl } from './utils/screenshot';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { CanvasTexture, RepeatWrapping } from 'three';
+import { CanvasTexture, RepeatWrapping, BufferAttribute } from 'three';
 
 // Module-level stripe texture cache — created lazily, reused across renders
 const _texCache = {};
+
+// blue (low stress) → cyan → green → yellow → orange → red (high stress)
+function heatColor(t) {
+  // Full thermal: blue(0) → cyan → green → yellow → red(1)
+  t = Math.max(0, Math.min(1, t));
+  if (t < 0.25) { const f = t / 0.25;         return [0,           f,           1]; }
+  if (t < 0.50) { const f = (t - 0.25) / 0.25; return [0,           1,           1 - f]; }
+  if (t < 0.75) { const f = (t - 0.50) / 0.25; return [f,           1,           0]; }
+  const f = (t - 0.75) / 0.25;               return [1,           1 - f,       0];
+}
 
 // Jack Skellington: thin precise pinstripes
 function jackStripe(bgHex, stripeHex, repeat = 10) {
@@ -119,9 +129,14 @@ export default function Scene() {
   const structureOpacity = useStore(state => state.structureOpacity);
   const lightingMode = useStore(state => state.lightingMode);
   const annotations = useStore(state => state.annotations);
+  const removeAnnotation = useStore(state => state.removeAnnotation);
   const baseMaterial = useStore(state => state.baseMaterial);
   const structureMaterial = useStore(state => state.structureMaterial);
   const timelineStep = useStore(state => state.timelineStep);
+  const annotationMode = useStore(state => state.annotationMode);
+  const setAnnotationMode = useStore(state => state.setAnnotationMode);
+  const setPendingAnnotation = useStore(state => state.setPendingAnnotation);
+  const heatmapActive = useStore(state => state.heatmapActive);
 
   const { gl } = useThree();
   useEffect(() => { setGl(gl); }, [gl]);
@@ -220,8 +235,80 @@ export default function Scene() {
     origMatsStructure.current = capture(gltfBridge.scene);
   }, [gltf.scene, gltfBridge.scene]);
 
+  // Structural stress heatmap — per-vertex coloring + emissive glow across both models
+  useEffect(() => {
+    const scenes = [gltf.scene, gltfBridge.scene];
+
+    if (!heatmapActive) {
+      scenes.forEach(scene => {
+        scene.traverse(child => {
+          if (!child.isMesh) return;
+          if (child.geometry.attributes.color) child.geometry.deleteAttribute('color');
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(mat => {
+            mat.vertexColors = false;
+            mat.emissive?.setRGB(0, 0, 0);
+            mat.emissiveIntensity = 0;
+            mat.needsUpdate = true;
+          });
+        });
+      });
+      return;
+    }
+
+    // Pass 1: global Y min/max across both scenes
+    let minY = Infinity, maxY = -Infinity;
+    scenes.forEach(scene => {
+      scene.traverse(child => {
+        if (!child.isMesh) return;
+        const pos = child.geometry.attributes.position;
+        if (!pos) return;
+        for (let i = 0; i < pos.count; i++) {
+          const y = pos.getY(i);
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      });
+    });
+    const range = maxY - minY || 1;
+
+    // Pass 2: per-vertex color buffer + per-mesh emissive based on mesh centroid
+    scenes.forEach(scene => {
+      scene.traverse(child => {
+        if (!child.isMesh) return;
+        const pos = child.geometry.attributes.position;
+        if (!pos) return;
+
+        const colors = new Float32Array(pos.count * 3);
+        let sumY = 0;
+        for (let i = 0; i < pos.count; i++) {
+          const y = pos.getY(i);
+          sumY += y;
+          const t = 1 - (y - minY) / range;
+          const [r, g, b] = heatColor(t);
+          colors[i * 3]     = r;
+          colors[i * 3 + 1] = g;
+          colors[i * 3 + 2] = b;
+        }
+        child.geometry.setAttribute('color', new BufferAttribute(colors, 3));
+
+        // Emissive: use mesh centroid Y so dark faces still glow with their heat color
+        const centroidT = 1 - (sumY / pos.count - minY) / range;
+        const [er, eg, eb] = heatColor(centroidT);
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(mat => {
+          mat.vertexColors = true;
+          mat.emissive?.setRGB(er * 0.45, eg * 0.45, eb * 0.45);
+          mat.emissiveIntensity = 1;
+          mat.needsUpdate = true;
+        });
+      });
+    });
+  }, [heatmapActive, gltf.scene, gltfBridge.scene]);
+
   // Material preset: apply per-layer independently
   useEffect(() => {
+    if (heatmapActive) return; // heatmap owns the color channel; restore on heatmap off
     const PRESETS = {
       // Realistic
       granite:     null,
@@ -272,7 +359,7 @@ export default function Scene() {
 
     applyPreset(origMatsBase, baseMaterial);
     applyPreset(origMatsStructure, structureMaterial);
-  }, [baseMaterial, structureMaterial, gltf.scene, gltfBridge.scene]);
+  }, [baseMaterial, structureMaterial, heatmapActive, gltf.scene, gltfBridge.scene]);
 
   // When entering step 2, snap structure high so it descends visually
   useEffect(() => {
@@ -332,7 +419,18 @@ export default function Scene() {
     e.stopPropagation();
     const dx = e.clientX - pointerDownPos.current.x;
     const dy = e.clientY - pointerDownPos.current.y;
-    if (dx * dx + dy * dy > 25) return; // was a drag (>5px), not a tap
+    if (dx * dx + dy * dy > 25) return; // drag, not a tap
+
+    if (annotationMode) {
+      setPendingAnnotation({
+        position: [e.point.x, e.point.y, e.point.z],
+        screenX: e.clientX,
+        screenY: e.clientY,
+      });
+      setAnnotationMode(false); // single-shot: deactivate after placing
+      return;
+    }
+
     setSelectedPart(part);
     setAgentChatOpen(true);
   };
@@ -378,20 +476,33 @@ export default function Scene() {
       {annotations.map((ann) => (
         <Html key={ann.id} position={ann.position} center>
           <Box sx={{
-            px: 1.25, py: 0.5,
-            bgcolor: 'rgba(0,0,0,0.72)',
-            backdropFilter: 'blur(6px)',
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.25)',
-            pointerEvents: 'none',
+            display: 'flex', alignItems: 'center', gap: '6px',
+            px: '10px', py: '4px',
+            bgcolor: 'rgba(13,13,13,0.88)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(96,62,57,0.6)',
+            borderLeft: '2px solid #c00100',
+            borderRadius: 0,
+            pointerEvents: 'auto',
             whiteSpace: 'nowrap',
+            cursor: 'default',
           }}>
             <Typography sx={{
-              color: '#fff', fontFamily: 'Manrope, Arial, sans-serif',
-              fontWeight: 500, fontSize: 11,
+              color: '#ffb4a8', fontFamily: "'Space Grotesk', monospace",
+              fontWeight: 500, fontSize: 10, letterSpacing: '0.06em',
             }}>
               {ann.label}
             </Typography>
+            <Box
+              onClick={() => removeAnnotation(ann.id)}
+              sx={{
+                color: 'rgba(229,226,225,0.3)', cursor: 'pointer',
+                fontSize: 10, lineHeight: 1, userSelect: 'none',
+                '&:hover': { color: '#ffb4a8' },
+              }}
+            >
+              ✕
+            </Box>
           </Box>
         </Html>
       ))}

@@ -21,6 +21,7 @@ import {
   IconButton,
   Snackbar,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -29,9 +30,11 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import GradientIcon from '@mui/icons-material/Gradient';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import LayersIcon from '@mui/icons-material/Layers';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import ShareIcon from '@mui/icons-material/Share';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
@@ -121,6 +124,13 @@ export default function Model() {
   const setCameraFeedAvailable = useStore(state => state.setCameraFeedAvailable);
   const timelineStep = useStore(state => state.timelineStep);
   const setTimelineStep = useStore(state => state.setTimelineStep);
+  const annotationMode = useStore(state => state.annotationMode);
+  const setAnnotationMode = useStore(state => state.setAnnotationMode);
+  const pendingAnnotation = useStore(state => state.pendingAnnotation);
+  const setPendingAnnotation = useStore(state => state.setPendingAnnotation);
+  const addAnnotation = useStore(state => state.addAnnotation);
+  const heatmapActive = useStore(state => state.heatmapActive);
+  const setHeatmapActive = useStore(state => state.setHeatmapActive);
 
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
@@ -130,6 +140,7 @@ export default function Model() {
   const [showHint, setShowHint] = useState(true);
   const [cameraUnavailable, setCameraUnavailable] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [annotationLabel, setAnnotationLabel] = useState('');
   const [lightboxItem, setLightboxItem] = useState(null); // { url, label }
 
   const sliderRef = useRef();
@@ -220,6 +231,18 @@ export default function Model() {
       .writeText(window.location.href)
       .then(() => setFeedback({ severity: 'success', message: text.model.shareSuccess }))
       .catch(() => setFeedback({ severity: 'error', message: text.model.shareError }));
+  };
+
+  const confirmAnnotation = () => {
+    if (!annotationLabel.trim() || !pendingAnnotation) return;
+    addAnnotation({ label: annotationLabel.trim(), position: pendingAnnotation.position });
+    setPendingAnnotation(null);
+    setAnnotationLabel('');
+  };
+
+  const cancelAnnotation = () => {
+    setPendingAnnotation(null);
+    setAnnotationLabel('');
   };
 
   const handleChipClick = (idx) => {
@@ -396,43 +419,123 @@ export default function Model() {
         </Box>
       )}
 
-      {/* Construction Timeline trigger — top right */}
-      <Box sx={{ position: 'fixed', top: 16, right: 16, zIndex: 9997 }}>
-        <Tooltip title={timelineStep !== null
-          ? (language === 'zh' ? '關閉時間軸' : 'Close timeline')
-          : (language === 'zh' ? '施工時間軸' : 'Construction timeline')}
-          placement="left"
-        >
-          <Chip
-            icon={<LayersIcon sx={{ fontSize: '13px !important', color: `${timelineStep !== null ? C.primaryDeep : C.onSurfaceDim} !important` }} />}
-            label={language === 'zh' ? '時間軸' : 'Timeline'}
-            size="small"
-            onClick={() => {
-              if (timelineStep !== null) {
-                setTimelineStep(null);
-              } else {
-                setTimelineStep(0);
-                setAgentChatOpen(false);
-                setDesignerOpen(false);
-                setShowAccordion(false);
-              }
-            }}
-            sx={{
-              fontFamily: "'Space Grotesk', monospace", fontSize: 10, fontWeight: 500, height: 22,
-              borderRadius: 0,
-              bgcolor: timelineStep !== null ? 'rgba(192,1,0,0.15)' : 'rgba(13,13,13,0.82)',
-              color: timelineStep !== null ? C.primaryDeep : C.onSurfaceDim,
-              border: `1px solid ${timelineStep !== null ? C.primaryDeep : C.outline}`,
-              backdropFilter: 'blur(10px)',
-              letterSpacing: '0.1em',
-              cursor: 'pointer',
-              boxShadow: timelineStep !== null ? `0 0 12px ${C.primaryGlow}` : 'none',
-              transition: 'background-color 0.05s steps(1), border-color 0.05s steps(1)',
-              '&:hover': { borderColor: C.primaryDeep, color: C.primary },
-            }}
-          />
-        </Tooltip>
-      </Box>
+      {/* Top-right tool chips: Annotation · Heatmap · Timeline */}
+      <Stack direction="row" spacing={0.75} sx={{ position: 'fixed', top: 16, right: 16, zIndex: 9997 }}>
+
+        {/* Annotation pin mode */}
+        {(() => {
+          const on = annotationMode;
+          return (
+            <Tooltip title={on ? (language === 'zh' ? '取消標記' : 'Cancel pin') : (language === 'zh' ? '新增標記' : 'Add pin')} placement="bottom">
+              <Chip
+                icon={<PushPinOutlinedIcon sx={{ fontSize: '13px !important', color: `${on ? '#fff' : C.onSurfaceDim} !important` }} />}
+                label={language === 'zh' ? '標記' : 'Pin'}
+                size="small"
+                onClick={() => setAnnotationMode(!on)}
+                sx={{
+                  fontFamily: "'Space Grotesk', monospace", fontSize: 10, fontWeight: 500, height: 22, borderRadius: 0,
+                  bgcolor: on ? C.primaryDeep : 'rgba(13,13,13,0.82)',
+                  color: on ? '#fff' : C.onSurfaceDim,
+                  border: `1px solid ${on ? C.primaryDeep : C.outline}`,
+                  backdropFilter: 'blur(10px)', letterSpacing: '0.1em', cursor: 'pointer',
+                  boxShadow: on ? `0 0 12px ${C.primaryGlow}` : 'none',
+                  transition: 'background-color 0.05s steps(1), border-color 0.05s steps(1)',
+                  '&:hover': { borderColor: C.primaryDeep, color: on ? '#fff' : C.primary },
+                }}
+              />
+            </Tooltip>
+          );
+        })()}
+
+        {/* Stress heatmap */}
+        {(() => {
+          const on = heatmapActive;
+          return (
+            <Tooltip title={on ? (language === 'zh' ? '關閉熱圖' : 'Hide heatmap') : (language === 'zh' ? '應力熱圖' : 'Stress heatmap')} placement="bottom">
+              <Chip
+                icon={<GradientIcon sx={{ fontSize: '13px !important', color: `${on ? '#fff' : C.onSurfaceDim} !important` }} />}
+                label={language === 'zh' ? '熱圖' : 'Heat'}
+                size="small"
+                onClick={() => setHeatmapActive(!on)}
+                sx={{
+                  fontFamily: "'Space Grotesk', monospace", fontSize: 10, fontWeight: 500, height: 22, borderRadius: 0,
+                  bgcolor: on ? 'rgba(150,50,0,0.85)' : 'rgba(13,13,13,0.82)',
+                  color: on ? '#fff' : C.onSurfaceDim,
+                  border: `1px solid ${on ? 'rgba(200,80,0,0.8)' : C.outline}`,
+                  backdropFilter: 'blur(10px)', letterSpacing: '0.1em', cursor: 'pointer',
+                  boxShadow: on ? '0 0 12px rgba(200,80,0,0.5)' : 'none',
+                  transition: 'background-color 0.05s steps(1), border-color 0.05s steps(1)',
+                  '&:hover': { borderColor: 'rgba(200,80,0,0.7)', color: on ? '#fff' : C.primary },
+                }}
+              />
+            </Tooltip>
+          );
+        })()}
+
+        {/* Construction timeline */}
+        {(() => {
+          const on = timelineStep !== null;
+          return (
+            <Tooltip title={on ? (language === 'zh' ? '關閉時間軸' : 'Close timeline') : (language === 'zh' ? '施工時間軸' : 'Timeline')} placement="bottom">
+              <Chip
+                icon={<LayersIcon sx={{ fontSize: '13px !important', color: `${on ? C.primaryDeep : C.onSurfaceDim} !important` }} />}
+                label={language === 'zh' ? '時間軸' : 'Timeline'}
+                size="small"
+                onClick={() => {
+                  if (on) { setTimelineStep(null); }
+                  else { setTimelineStep(0); setAgentChatOpen(false); setDesignerOpen(false); setShowAccordion(false); }
+                }}
+                sx={{
+                  fontFamily: "'Space Grotesk', monospace", fontSize: 10, fontWeight: 500, height: 22, borderRadius: 0,
+                  bgcolor: on ? 'rgba(192,1,0,0.15)' : 'rgba(13,13,13,0.82)',
+                  color: on ? C.primaryDeep : C.onSurfaceDim,
+                  border: `1px solid ${on ? C.primaryDeep : C.outline}`,
+                  backdropFilter: 'blur(10px)', letterSpacing: '0.1em', cursor: 'pointer',
+                  boxShadow: on ? `0 0 12px ${C.primaryGlow}` : 'none',
+                  transition: 'background-color 0.05s steps(1), border-color 0.05s steps(1)',
+                  '&:hover': { borderColor: C.primaryDeep, color: on ? C.primaryDeep : C.primary },
+                }}
+              />
+            </Tooltip>
+          );
+        })()}
+      </Stack>
+
+      {/* Heatmap legend — bottom-right, only when active */}
+      {heatmapActive && (
+        <Box sx={{
+          position: 'fixed', right: 16, bottom: 80, zIndex: 9997,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5,
+          bgcolor: 'rgba(13,13,13,0.78)', backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          px: 1, py: 1,
+        }}>
+          <Box sx={{
+            fontFamily: "'Space Grotesk', monospace", fontSize: 9, fontWeight: 600,
+            color: 'rgba(180,220,255,0.75)', letterSpacing: '0.08em', textTransform: 'uppercase',
+          }}>
+            {language === 'zh' ? '低' : 'Low'}
+          </Box>
+          <Box sx={{
+            width: 10, height: 80,
+            background: 'linear-gradient(to bottom, #00aaff, #00ffcc, #00ff44, #aaff00, #ffee00, #ff7700, #ff2200)',
+            borderRadius: 0,
+            border: '1px solid rgba(255,255,255,0.06)',
+          }} />
+          <Box sx={{
+            fontFamily: "'Space Grotesk', monospace", fontSize: 9, fontWeight: 600,
+            color: 'rgba(255,160,120,0.75)', letterSpacing: '0.08em', textTransform: 'uppercase',
+          }}>
+            {language === 'zh' ? '高' : 'High'}
+          </Box>
+          <Box sx={{
+            fontFamily: "'Space Grotesk', monospace", fontSize: 8, fontWeight: 400,
+            color: 'rgba(229,226,225,0.3)', letterSpacing: '0.06em', textTransform: 'uppercase', mt: 0.25,
+          }}>
+            {language === 'zh' ? '應力' : 'Stress'}
+          </Box>
+        </Box>
+      )}
 
       {/* Language chip — top left */}
       <Box sx={{ position: 'fixed', top: 16, left: 16, zIndex: 9997 }}>
@@ -776,6 +879,100 @@ export default function Model() {
           }}
         />
       )}
+
+      {/* Annotation mode cursor hint */}
+      {annotationMode && !pendingAnnotation && (
+        <Box sx={{
+          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9998, pointerEvents: 'none',
+          bgcolor: 'rgba(13,13,13,0.88)', backdropFilter: 'blur(10px)',
+          border: `1px solid ${C.outline}`, borderTop: `2px solid ${C.primaryDeep}`,
+          px: 2, py: 0.75,
+          animation: 'hintFade 4s ease forwards',
+          '@keyframes hintFade': { '0%': { opacity: 0 }, '10%': { opacity: 1 }, '80%': { opacity: 1 }, '100%': { opacity: 0 } },
+        }}>
+          <Typography sx={{ fontFamily: "'Space Grotesk', monospace", fontSize: 10, color: C.onSurfaceDim, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            {language === 'zh' ? '點擊橋樑模型以放置標記' : 'Tap the bridge model to place a pin'}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Annotation label input */}
+      {pendingAnnotation && (() => {
+        const PANEL_W = 220;
+        const left = Math.min(pendingAnnotation.screenX + 16, (typeof window !== 'undefined' ? window.innerWidth : 400) - PANEL_W - 8);
+        const top  = Math.max(8, pendingAnnotation.screenY - 40);
+        return (
+          <>
+            {/* Backdrop — click outside cancels */}
+            <Box onClick={cancelAnnotation} sx={{ position: 'fixed', inset: 0, zIndex: 10001 }} />
+            <Box
+              onClick={e => e.stopPropagation()}
+              sx={{
+                position: 'fixed', left, top, width: PANEL_W, zIndex: 10002,
+                bgcolor: 'rgba(13,13,13,0.97)', backdropFilter: 'blur(16px)',
+                border: `1px solid ${C.outline}`, borderTop: `2px solid ${C.primaryDeep}`,
+                p: 1.5, borderRadius: 0,
+                animation: 'pinIn 0.1s steps(3)',
+                '@keyframes pinIn': { from: { opacity: 0, transform: 'translateY(-4px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+              }}
+            >
+              <Typography sx={{ fontFamily: "'Space Grotesk', monospace", fontSize: 9, color: C.onSurfaceFaint, letterSpacing: '0.15em', textTransform: 'uppercase', mb: 0.75 }}>
+                {language === 'zh' ? '輸入標籤' : 'Label this point'}
+              </Typography>
+              <TextField
+                autoFocus
+                size="small"
+                fullWidth
+                placeholder={language === 'zh' ? '標籤名稱...' : 'Label...'}
+                value={annotationLabel}
+                onChange={e => setAnnotationLabel(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') confirmAnnotation();
+                  if (e.key === 'Escape') cancelAnnotation();
+                }}
+                sx={{
+                  mb: 1,
+                  '& .MuiOutlinedInput-root': {
+                    fontFamily: "'Space Grotesk', monospace", fontSize: 11, color: C.onSurface,
+                    bgcolor: C.surfaceLowest, borderRadius: 0,
+                    '& fieldset': { borderColor: C.outline, borderRadius: 0 },
+                    '&.Mui-focused fieldset': { borderColor: C.primaryDeep, borderWidth: '1px' },
+                    '& input::placeholder': { color: C.onSurfaceFaint, opacity: 1 },
+                  },
+                }}
+              />
+              <Stack direction="row" spacing={0.75}>
+                <Chip
+                  label={language === 'zh' ? '放置' : 'Place'}
+                  size="small"
+                  onClick={confirmAnnotation}
+                  disabled={!annotationLabel.trim()}
+                  sx={{
+                    fontFamily: "'Space Grotesk', monospace", fontSize: 10, fontWeight: 700, borderRadius: 0, cursor: 'pointer',
+                    bgcolor: annotationLabel.trim() ? C.primaryDeep : C.surfaceHigh,
+                    color: annotationLabel.trim() ? '#fff' : C.onSurfaceFaint,
+                    border: `1px solid ${annotationLabel.trim() ? C.primaryDeep : C.outline}`,
+                    '&:hover': { bgcolor: annotationLabel.trim() ? '#a00000' : undefined },
+                    '&.Mui-disabled': { opacity: 0.35 },
+                  }}
+                />
+                <Chip
+                  label={language === 'zh' ? '取消' : 'Cancel'}
+                  size="small"
+                  onClick={cancelAnnotation}
+                  sx={{
+                    fontFamily: "'Space Grotesk', monospace", fontSize: 10, borderRadius: 0, cursor: 'pointer',
+                    bgcolor: 'transparent', color: C.onSurfaceFaint,
+                    border: `1px solid ${C.outline}`,
+                    '&:hover': { color: C.onSurface, borderColor: C.outlineStrong },
+                  }}
+                />
+              </Stack>
+            </Box>
+          </>
+        );
+      })()}
 
       <AgentChat />
       <BridgeDesignerPanel />

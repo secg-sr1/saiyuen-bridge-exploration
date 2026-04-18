@@ -76,18 +76,6 @@ const MATERIAL_LABEL = {
   beetlered:  { en: 'Beetle — Chaos',zh: '甲蟲汁(地獄紅)' },
 };
 
-const PART_QUERIES = {
-  base: {
-    en: 'The visitor tapped the base/foundation. Move to the best view, highlight it, and explain it.',
-    zh: '訪客點擊了基礎/拱橋部分。移動到最佳視角，高亮顯示並用繁體中文解說。',
-    labelKey: 'base',
-  },
-  structure: {
-    en: 'The visitor tapped the upper structure. Move to the best view, highlight it, and explain it.',
-    zh: '訪客點擊了上部結構。移動到最佳視角，高亮顯示並用繁體中文解說。',
-    labelKey: 'structure',
-  },
-};
 
 function getRotationHint(azimuthRad, text) {
   if (azimuthRad >= -0.52 && azimuthRad <= 0.52) return text.chat.rotationHints.front;
@@ -143,7 +131,6 @@ export default function AgentChat() {
   const lastMessageRef = useRef('');
   const prevAzimuthRef = useRef(0);
   const hintTimeoutRef = useRef(null);
-  const pendingPartRef = useRef(null);
   const recognitionRef = useRef(null);
 
   const isMobile = useMediaQuery('(max-width:834px)');
@@ -156,27 +143,6 @@ export default function AgentChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isAgentThinking]);
 
-  useEffect(() => {
-    const query = selectedPart && PART_QUERIES[selectedPart];
-    if (!query) return;
-    if (pendingPartRef.current === selectedPart) return;
-
-    pendingPartRef.current = selectedPart;
-    setAgentChatOpen(true);
-    setDesignerOpen(false);
-    setShowAccordion(false);
-    setError(null);
-
-    const label = selectedPart === 'base' ? text.model.baseTitle : text.model.structureTitle;
-    const message = query[language] ?? query.en;
-
-    sendMessage(message, { label }).catch((err) => {
-      setError(text.chat.agentError);
-      console.error(err);
-    }).finally(() => {
-      pendingPartRef.current = null;
-    });
-  }, [selectedPart, setAgentChatOpen, setDesignerOpen, setShowAccordion, text.chat.agentError, text.model.baseTitle, text.model.structureTitle]);
 
   const handleRestore = () => {
     setShowBase(true);

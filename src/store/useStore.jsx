@@ -88,6 +88,17 @@ export let useStore = create((set) => ({
   timelineStep: null,
   setTimelineStep: (step) => set({ timelineStep: step }),
 
+  // Annotation pin mode
+  annotationMode: false,
+  setAnnotationMode: (v) => set({ annotationMode: v }),
+  pendingAnnotation: null,
+  setPendingAnnotation: (ann) => set({ pendingAnnotation: ann }),
+  removeAnnotation: (id) => set(state => ({ annotations: state.annotations.filter(a => a.id !== id) })),
+
+  // Structural stress heatmap overlay
+  heatmapActive: false,
+  setHeatmapActive: (v) => set({ heatmapActive: v }),
+
   // Info panel open/close (moved to store for cross-component mutual exclusion)
   showAccordion: false,
   setShowAccordion: (open) => set({ showAccordion: open }),
