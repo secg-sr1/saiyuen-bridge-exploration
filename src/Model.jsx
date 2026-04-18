@@ -243,9 +243,9 @@ export default function Model() {
         })
         .catch(() => setSelfieOn(false));
     } else {
+      if (selfieVideoRef.current) selfieVideoRef.current.srcObject = null;
       selfieStreamRef.current?.getTracks().forEach(t => t.stop());
       selfieStreamRef.current = null;
-      if (selfieVideoRef.current) selfieVideoRef.current.srcObject = null;
     }
     return () => { cancelled = true; };
   }, [selfieOn]);
@@ -337,44 +337,43 @@ export default function Model() {
         playsInline
       />
 
-      {/* Selfie PiP — bottom-right, only when SELF is active */}
-      {selfieOn && (
-        <Box sx={{
-          position: 'fixed', bottom: 20, right: 16,
-          width: 108, height: 144,
-          zIndex: 9998,
-          border: `1px solid ${C.primaryDeep}`,
-          boxShadow: `0 0 14px rgba(192,1,0,0.3)`,
-          bgcolor: '#0d0d0d',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""', position: 'absolute', top: 0, left: 0,
-            width: 12, height: 12,
-            borderTop: `2px solid ${C.primaryDeep}`,
-            borderLeft: `2px solid ${C.primaryDeep}`,
-          },
-          '&::after': {
-            content: '""', position: 'absolute', bottom: 0, right: 0,
-            width: 12, height: 12,
-            borderBottom: `2px solid ${C.primaryDeep}`,
-            borderRight: `2px solid ${C.primaryDeep}`,
-          },
-        }}>
-          <Box
-            component="video"
-            ref={selfieVideoRef}
-            autoPlay
-            playsInline
-            muted
-            sx={{
-              width: '100%', height: '100%',
-              objectFit: 'cover',
-              transform: 'scaleX(-1)',
-              display: 'block',
-            }}
-          />
-        </Box>
-      )}
+      {/* Selfie PiP — always in DOM, hidden when SELF is off so the ref stays valid for cleanup */}
+      <Box sx={{
+        display: selfieOn ? 'block' : 'none',
+        position: 'fixed', bottom: 20, right: 16,
+        width: 108, height: 144,
+        zIndex: 9998,
+        border: `1px solid ${C.primaryDeep}`,
+        boxShadow: `0 0 14px rgba(192,1,0,0.3)`,
+        bgcolor: '#0d0d0d',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""', position: 'absolute', top: 0, left: 0,
+          width: 12, height: 12,
+          borderTop: `2px solid ${C.primaryDeep}`,
+          borderLeft: `2px solid ${C.primaryDeep}`,
+        },
+        '&::after': {
+          content: '""', position: 'absolute', bottom: 0, right: 0,
+          width: 12, height: 12,
+          borderBottom: `2px solid ${C.primaryDeep}`,
+          borderRight: `2px solid ${C.primaryDeep}`,
+        },
+      }}>
+        <Box
+          component="video"
+          ref={selfieVideoRef}
+          autoPlay
+          playsInline
+          muted
+          sx={{
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            transform: 'scaleX(-1)',
+            display: 'block',
+          }}
+        />
+      </Box>
 
       {/* Drag-to-rotate hint */}
       {showHint && cameraReady && !showOnboarding && (
