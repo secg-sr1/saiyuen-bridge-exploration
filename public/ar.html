@@ -63,11 +63,11 @@
     const dbg = document.getElementById('dbg');
     const log = (msg, color) => { dbg.style.color = color || '#0f0'; dbg.textContent = msg; };
 
-    document.querySelector('a-scene').addEventListener('loaded', () => log('AR.js ready — point at marker'));
+    document.querySelector('a-scene').addEventListener('loaded', () => { dbg.textContent = ''; });
     document.querySelector('a-scene').addEventListener('camera-error', () => log('Camera FAILED — check permissions', '#f00'));
 
     document.getElementById('marker').addEventListener('markerFound', () => log('Marker FOUND ✓', '#0f0'));
-    document.getElementById('marker').addEventListener('markerLost',  () => log('AR.js ready — point at marker', '#ff0'));
+    document.getElementById('marker').addEventListener('markerLost',  () => { dbg.textContent = ''; });
     document.getElementById('hiro').addEventListener('markerFound',   () => log('Hiro detected — custom .patt may need regeneration', '#ff0'));
 
     fetch('/marker.patt')
