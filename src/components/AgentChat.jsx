@@ -208,6 +208,7 @@ export default function AgentChat() {
   // Generate 2 realistic + 2 fantastical suggestions whenever the user taps a part
   useEffect(() => {
     if (!selectedPart) { setMaterialSuggestions({ realistic: [], fantastical: [] }); return; }
+    track('bridge_part_tapped', { part: selectedPart, language });
     const realistic   = [...MATERIAL_REALISTIC].sort(() => Math.random() - 0.5).slice(0, 2);
     const fantastical = [...MATERIAL_FANTASTICAL].sort(() => Math.random() - 0.5).slice(0, 2);
     setMaterialSuggestions({ realistic, fantastical });
@@ -237,6 +238,7 @@ export default function AgentChat() {
     setError(null);
 
     track('chat_message_sent', { message_count: chatHistory.length + 1 });
+    track('ai_question_asked', { question: msg.slice(0, 150), language });
     try {
       await sendMessage(msg);
     } catch (err) {

@@ -48,6 +48,7 @@ import BridgeDesignerPanel from './components/BridgeDesignerPanel.jsx';
 import ConstructionTimeline from './components/ConstructionTimeline.jsx';
 import OldFilmLightbox from './components/OldFilmLightbox.jsx';
 import { getUIText } from './content/uiText.js';
+import { track } from './utils/analytics';
 import '@fontsource/manrope/300.css';
 import '@fontsource/manrope/400.css';
 import '@fontsource/manrope/500.css';
@@ -139,6 +140,20 @@ export default function Model() {
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
 
   const [arMode, setArMode] = useState(false);
+  const arEntryTimeRef = useRef(null);
+
+  const openAr = () => {
+    arEntryTimeRef.current = Date.now();
+    track('ar_mode_entered', { language });
+    setArMode(true);
+  };
+
+  const closeAr = () => {
+    const duration = arEntryTimeRef.current ? Math.round((Date.now() - arEntryTimeRef.current) / 1000) : null;
+    track('ar_mode_exited', { duration_seconds: duration, language });
+    arEntryTimeRef.current = null;
+    setArMode(false);
+  };
   const selfieOn    = useStore(state => state.selfieOn);
   const setSelfieOn = useStore(state => state.setSelfieOn);
   const selfieStreamRef = useRef(null);
@@ -612,7 +627,7 @@ export default function Model() {
         <Chip
           label={text.model.languageToggle}
           size="small"
-          onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
+          onClick={() => { const next = language === 'zh' ? 'en' : 'zh'; track('language_switched', { to: next }); setLanguage(next); }}
           sx={{
             fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 500, height: 22,
             ...sharp,
@@ -628,7 +643,7 @@ export default function Model() {
           icon={<ViewInArIcon sx={{ fontSize: '13px !important', color: `${arMode ? '#fff' : C.onSurfaceDim} !important` }} />}
           label="AR"
           size="small"
-          onClick={() => setArMode(v => !v)}
+          onClick={() => arMode ? closeAr() : openAr()}
           sx={{
             fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 500, height: 22, borderRadius: 0,
             bgcolor: arMode ? C.primaryDeep : 'rgba(13,13,13,0.82)',
@@ -1111,7 +1126,7 @@ export default function Model() {
         </Canvas>
       </Suspense>
 
-      {arMode && <ARView onClose={() => setArMode(false)} />}
+      {arMode && <ARView onClose={closeAr} />}
     </ThemeProvider>
   );
 }
