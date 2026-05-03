@@ -133,13 +133,74 @@ export default function Model() {
   const [feedback, setFeedback] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [lightboxItem, setLightboxItem] = useState(null); // { url, label }
+  const [cameraNotice, setCameraNotice] = useState(null);
 
   const sliderRef = useRef();
+  const videoBgRef = useRef(null);
+  const cameraStreamRef = useRef(null);
+  const setCameraFeedAvailable = useStore(state => state.setCameraFeedAvailable);
   const text = getUIText(language);
+
   useEffect(() => {
     const dismissed = window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
     setShowOnboarding(!dismissed);
   }, []);
+
+  // Live device camera behind the transparent WebGL canvas (also drives `captureComposite` / designer AR).
+  useEffect(() => {
+    let cancelled = false;
+    const stop = () => {
+      cameraStreamRef.current?.getTracks().forEach((t) => t.stop());
+      cameraStreamRef.current = null;
+      const el = videoBgRef.current;
+      if (el) el.srcObject = null;
+      setCameraFeedAvailable(false);
+    };
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      const t = getUIText(useStore.getState().language);
+      setCameraNotice(`${t.model.cameraUnavailableTitle} ${t.model.cameraUnavailableBody}`);
+      return () => { cancelled = true; stop(); };
+    }
+
+    const tryStream = async (constraints) => {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (cancelled) {
+        stream.getTracks().forEach((t) => t.stop());
+        return false;
+      }
+      cameraStreamRef.current = stream;
+      const el = videoBgRef.current;
+      if (el) {
+        el.srcObject = stream;
+        await el.play().catch(() => {});
+      }
+      setCameraFeedAvailable(true);
+      setCameraNotice(null);
+      return true;
+    };
+
+    (async () => {
+      try {
+        await tryStream({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      } catch {
+        try {
+          await tryStream({ video: true, audio: false });
+        } catch {
+          if (!cancelled) {
+            setCameraFeedAvailable(false);
+            const t = getUIText(useStore.getState().language);
+            setCameraNotice(`${t.model.cameraUnavailableTitle} ${t.model.cameraUnavailableBody}`);
+          }
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, [setCameraFeedAvailable]);
 
   useEffect(() => {
     sliderRef.current?.slickGoTo(activeSlide);
@@ -211,6 +272,64 @@ export default function Model() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+
+      {/* Full-viewport camera + WebGL: fixed inset matches #root height (avoids 100vh vs 100% mobile seam / “duplicated” strip). */}
+      <Box
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          overflow: 'hidden',
+          contain: 'strict',
+        }}
+      >
+        <Box
+          component="video"
+          id="videoBackground"
+          ref={videoBgRef}
+          muted
+          playsInline
+          autoPlay
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center center',
+            zIndex: 0,
+            pointerEvents: 'none',
+            backgroundColor: '#0a0a0a',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: 'auto',
+          }}
+        >
+          <Suspense fallback={<LoadingOverlay label={text.model.cameraLoading} />}>
+            <Canvas
+              gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'block',
+                touchAction: 'none',
+              }}
+              onCreated={({ gl, scene }) => {
+                gl.setClearColor(0x000000, 0);
+                scene.background = null;
+              }}
+              onPointerMissed={() => setSelectedPart(null)}
+            >
+              <Scene />
+            </Canvas>
+          </Suspense>
+        </Box>
+      </Box>
 
       {/* Onboarding modal */}
       {showOnboarding && (
@@ -851,6 +970,19 @@ export default function Model() {
         </Alert>
       </Snackbar>
 
+      <Snackbar
+        open={!!cameraNotice}
+        autoHideDuration={6000}
+        onClose={() => setCameraNotice(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ zIndex: 99999 }}
+      >
+        <Alert severity="info" onClose={() => setCameraNotice(null)}
+          sx={{ fontFamily: FONT_LABEL, fontWeight: 400, borderRadius: 0, maxWidth: 420 }}>
+          {cameraNotice}
+        </Alert>
+      </Snackbar>
+
       {selectedDesign && (
         <Box
           component="img"
@@ -860,7 +992,7 @@ export default function Model() {
             position: 'fixed', inset: 0, width: '100%', height: '100%',
             objectFit: 'cover', pointerEvents: 'none',
             opacity: designBlendOpacity,
-            zIndex: 1,
+            zIndex: 2,
             transition: 'opacity 0.3s ease',
           }}
         />
@@ -876,16 +1008,6 @@ export default function Model() {
           onClose={() => setLightboxItem(null)}
         />
       )}
-
-      <Suspense fallback={<LoadingOverlay label={text.model.cameraLoading} />}>
-        <Canvas
-          gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
-          style={{ position: 'relative' }}
-          onPointerMissed={() => setSelectedPart(null)}
-        >
-          <Scene />
-        </Canvas>
-      </Suspense>
 
     </ThemeProvider>
   );
