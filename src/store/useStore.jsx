@@ -15,7 +15,18 @@ export let useStore = create((set) => ({
   showStructure: true,
   setShowStructure: (showstructure) => set({ showStructure: showstructure }),
 
-  // Tap-to-Ask: which mesh part the user tapped ('base' | 'structure' | null)
+  showHandrail: true,
+  setShowHandrail: (v) => set({ showHandrail: v }),
+
+  // Active variant index (1-based) for each geometry layer
+  selectedFloor: 1,
+  setSelectedFloor: (n) => set({ selectedFloor: n }),
+  selectedArch: 1,
+  setSelectedArch: (n) => set({ selectedArch: n }),
+  selectedHandrail: 1,
+  setSelectedHandrail: (n) => set({ selectedHandrail: n }),
+
+  // Tap-to-Ask: which mesh part the user tapped ('base' | 'structure' | 'handrail' | null)
   selectedPart: null,
   setSelectedPart: (part) => set({ selectedPart: part }),
 
@@ -53,6 +64,8 @@ export let useStore = create((set) => ({
   setBaseOpacity: (v) => set({ baseOpacity: v }),
   structureOpacity: 1,
   setStructureOpacity: (v) => set({ structureOpacity: v }),
+  handrailOpacity: 1,
+  setHandrailOpacity: (v) => set({ handrailOpacity: v }),
 
   // Lighting mode: 'day' | 'dusk' | 'night'
   lightingMode: 'day',
@@ -149,5 +162,16 @@ export let useStore = create((set) => ({
   setBaseMaterial: (material) => set({ baseMaterial: material }),
   structureMaterial: 'granite',
   setStructureMaterial: (material) => set({ structureMaterial: material }),
+  handrailMaterial: 'granite',
+  setHandrailMaterial: (material) => set({ handrailMaterial: material }),
+
+  // Assemble animation — increment key to re-trigger the fly-in sequence
+  assembleKey: 0,
+  triggerAssemble: () => set(state => ({
+    assembleKey: state.assembleKey + 1,
+    showBase: true,
+    showStructure: true,
+    showHandrail: true,
+  })),
 
 }));

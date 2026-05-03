@@ -10,4 +10,5 @@ export default defineConfig({
   ],
   // base: '/saiyuen-alpha/',
   base: '/',
+  assetsInclude: ['**/*.glb'],
 })

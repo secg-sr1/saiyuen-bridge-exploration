@@ -7,19 +7,17 @@ import { useStore } from '../store/useStore';
 import { track } from '../utils/analytics';
 
 const C = {
-  surface:        '#131313',
-  surfaceHigh:    '#2a2a2a',
-  outline:        'rgba(96,62,57,0.5)',
-  outlineStrong:  '#b18780',
-  primary:        '#ffb4a8',
-  primaryDeep:    '#c00100',
-  primaryGlow:    'rgba(192,1,0,0.35)',
-  onSurface:      '#e5e2e1',
-  onSurfaceDim:   'rgba(229,226,225,0.45)',
-  onSurfaceFaint: 'rgba(229,226,225,0.22)',
+  bg:          '#F6F4F1',
+  border:      '#E2DFDB',
+  borderLight: '#EEECE8',
+  ink:         '#111111',
+  inkSub:      '#555555',
+  inkMuted:    '#999999',
+  inkFaint:    '#BBBBBB',
+  chip:        '#EEECE8',
 };
 const FONT_HEAD  = 'Manrope, Arial, sans-serif';
-const FONT_LABEL = "'Space Grotesk', monospace";
+const FONT_LABEL = 'Manrope, Arial, sans-serif';
 const sharp = { borderRadius: 0 };
 
 const STEPS = [
@@ -67,90 +65,88 @@ export default function ConstructionTimeline() {
       left: '50%',
       transform: 'translateX(-50%)',
       zIndex: 9998,
-      width: 'min(92vw, 420px)',
-      bgcolor: 'rgba(13,13,13,0.96)',
-      backdropFilter: 'blur(20px)',
-      border: `1px solid ${C.outline}`,
-      borderTop: `2px solid ${C.primaryDeep}`,
-      boxShadow: `0 0 40px ${C.primaryGlow}`,
+      width: 'min(92vw, 440px)',
+      bgcolor: C.bg,
+      border: `1px solid ${C.border}`,
+      boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
       ...sharp,
-      animation: 'tlSlide 0.18s steps(6)',
+      animation: 'tlSlide 0.22s ease-out',
       '@keyframes tlSlide': {
         from: { opacity: 0, transform: 'translateX(-50%) translateY(8px)' },
         to:   { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
       },
     }}>
 
-      {/* Top bar: close + step label */}
+      {/* Header */}
       <Box sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        px: 1.5, pt: 1, pb: 0.5,
-        borderBottom: `1px solid ${C.outline}`,
-        position: 'relative',
+        px: 2.5, py: 1.75,
+        borderBottom: `1px solid ${C.border}`,
       }}>
-        <Box sx={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, bgcolor: C.primaryDeep }} />
-
         <Typography sx={{
-          fontFamily: FONT_HEAD, fontWeight: 800, fontSize: 11,
-          color: C.onSurface, letterSpacing: '0.12em', textTransform: 'uppercase', pl: 0.5,
+          fontFamily: FONT_HEAD, fontWeight: 800, fontSize: 12,
+          color: C.ink, letterSpacing: '0.12em', textTransform: 'uppercase',
         }}>
           {language === 'zh' ? '施工時間軸' : 'Construction Timeline'}
         </Typography>
 
-        <Stack direction="row" alignItems="center" spacing={0.5}>
+        <Stack direction="row" alignItems="center" spacing={2}>
           <Typography sx={{
-            fontFamily: FONT_LABEL, fontWeight: 700, fontSize: 10,
-            color: C.primary, letterSpacing: '0.1em', textTransform: 'uppercase',
+            fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+            color: C.inkFaint, letterSpacing: '0.1em', textTransform: 'uppercase',
           }}>
             {timelineStep + 1} / {STEPS.length}
           </Typography>
-          <Tooltip title={language === 'zh' ? '關閉' : 'Close'} placement="top">
-            <IconButton size="small" onClick={() => setTimelineStep(null)}
-              sx={{ color: C.onSurfaceFaint, ...sharp, '&:hover': { color: C.onSurface } }}>
-              <CloseIcon sx={{ fontSize: 14 }} />
-            </IconButton>
-          </Tooltip>
+          <Typography
+            onClick={() => setTimelineStep(null)}
+            sx={{
+              fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: C.inkMuted, cursor: 'pointer', transition: 'color 0.15s',
+              '&:hover': { color: C.ink },
+            }}
+          >
+            CLOSE
+          </Typography>
         </Stack>
       </Box>
 
-      {/* Step indicator dots */}
-      <Stack direction="row" spacing={0.75} alignItems="center" justifyContent="center" sx={{ pt: 1.25, px: 1.5 }}>
+      {/* Step progress bar */}
+      <Box sx={{ px: 2.5, pt: 2, display: 'flex', gap: 0.75, alignItems: 'center' }}>
         {STEPS.map((s, i) => (
           <Tooltip key={i} title={language === 'zh' ? s.zh : s.en} placement="top">
             <Box
               onClick={() => setTimelineStep(i)}
               sx={{
-                height: 6,
-                width: i === timelineStep ? 28 : 8,
-                bgcolor: i === timelineStep ? C.primaryDeep : i < timelineStep ? C.outlineStrong : C.outline,
-                ...sharp,
+                height: 3, flex: 1,
+                bgcolor: i <= timelineStep ? C.ink : C.border,
                 cursor: 'pointer',
-                transition: 'width 0.2s ease, background-color 0.15s ease',
-                '&:hover': { bgcolor: i === timelineStep ? C.primaryDeep : C.primary },
+                transition: 'background-color 0.2s ease',
+                '&:hover': { bgcolor: i <= timelineStep ? '#333' : C.inkFaint },
               }}
             />
           </Tooltip>
         ))}
-      </Stack>
+      </Box>
 
-      {/* Step name + description */}
-      <Box sx={{ px: 1.75, pt: 1, pb: 0.5 }}>
+      {/* Step content */}
+      <Box sx={{ px: 2.5, pt: 2, pb: 0.5 }}>
         <Typography sx={{
-          fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 12,
-          color: C.primary, letterSpacing: '0.06em', textTransform: 'uppercase', mb: 0.4,
+          fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 14,
+          color: C.ink, letterSpacing: '0.04em', textTransform: 'uppercase', mb: 0.75,
         }}>
           {label}
         </Typography>
         <Typography sx={{
-          fontFamily: FONT_LABEL, fontWeight: 400, fontSize: 10,
-          color: C.onSurfaceDim, lineHeight: 1.65,
+          fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 13,
+          color: C.inkSub, lineHeight: 1.75,
         }}>
           {descText}
         </Typography>
       </Box>
 
-      {/* Prev / Next navigation */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1, pb: 1, pt: 0.5 }}>
+      {/* Navigation */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, pb: 2, pt: 1.5 }}>
         <Tooltip title={language === 'zh' ? '上一步' : 'Previous'} placement="top">
           <span>
             <IconButton
@@ -158,10 +154,10 @@ export default function ConstructionTimeline() {
               onClick={() => setTimelineStep(Math.max(0, timelineStep - 1))}
               disabled={timelineStep === 0}
               sx={{
-                color: C.primary, ...sharp,
-                border: `1px solid ${C.outline}`,
-                '&:hover': { bgcolor: 'rgba(192,1,0,0.1)', borderColor: C.primaryDeep },
-                '&.Mui-disabled': { opacity: 0.2, borderColor: C.outline },
+                color: C.inkMuted, ...sharp,
+                border: `1px solid ${C.border}`,
+                '&:hover': { borderColor: C.ink, color: C.ink },
+                '&.Mui-disabled': { opacity: 0.25 },
               }}
             >
               <ArrowBackIosNewIcon sx={{ fontSize: 12 }} />
@@ -169,25 +165,25 @@ export default function ConstructionTimeline() {
           </span>
         </Tooltip>
 
-        {/* Step name pills */}
-        <Stack direction="row" spacing={0.5} alignItems="center">
+        {/* Step labels — hidden on narrow screens to avoid overflow */}
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ display: { xs: 'none', sm: 'flex' } }}>
           {STEPS.map((s, i) => (
             <Box
               key={i}
               onClick={() => setTimelineStep(i)}
               sx={{
-                px: 0.75, py: 0.3,
-                ...sharp,
-                bgcolor: i === timelineStep ? 'rgba(192,1,0,0.15)' : 'transparent',
-                border: `1px solid ${i === timelineStep ? C.primaryDeep : 'transparent'}`,
-                cursor: 'pointer',
-                '&:hover': { borderColor: C.outlineStrong },
+                px: 1, py: 0.35,
+                bgcolor: i === timelineStep ? C.chip : 'transparent',
+                border: `1px solid ${i === timelineStep ? C.border : 'transparent'}`,
+                cursor: 'pointer', ...sharp,
+                transition: 'background-color 0.15s',
+                '&:hover': { borderColor: C.border, bgcolor: C.chip },
               }}
             >
               <Typography sx={{
-                fontFamily: FONT_LABEL, fontSize: 9, fontWeight: i === timelineStep ? 700 : 400,
-                color: i === timelineStep ? C.primary : C.onSurfaceFaint,
-                letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+                fontFamily: FONT_HEAD, fontSize: 10, fontWeight: i === timelineStep ? 700 : 400,
+                color: i === timelineStep ? C.ink : C.inkFaint,
+                letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
               }}>
                 {language === 'zh' ? s.zh : s.en}
               </Typography>
@@ -202,10 +198,10 @@ export default function ConstructionTimeline() {
               onClick={() => setTimelineStep(Math.min(STEPS.length - 1, timelineStep + 1))}
               disabled={timelineStep === STEPS.length - 1}
               sx={{
-                color: C.primary, ...sharp,
-                border: `1px solid ${C.outline}`,
-                '&:hover': { bgcolor: 'rgba(192,1,0,0.1)', borderColor: C.primaryDeep },
-                '&.Mui-disabled': { opacity: 0.2, borderColor: C.outline },
+                color: C.inkMuted, ...sharp,
+                border: `1px solid ${C.border}`,
+                '&:hover': { borderColor: C.ink, color: C.ink },
+                '&.Mui-disabled': { opacity: 0.25 },
               }}
             >
               <ArrowForwardIosIcon sx={{ fontSize: 12 }} />

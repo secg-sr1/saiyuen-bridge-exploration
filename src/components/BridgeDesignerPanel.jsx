@@ -13,6 +13,9 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material';
+import ImageSlider from 'react-slick';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
 import CloseIcon from '@mui/icons-material/Close';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -28,47 +31,54 @@ import { getUIText } from '../content/uiText';
 import OldFilmLightbox from './OldFilmLightbox';
 import { track } from '../utils/analytics';
 
-// Obsidian Decay palette tokens
 const C = {
-  surface:       '#131313',
-  surfaceLow:    '#1c1b1b',
-  surfaceMid:    '#201f1f',
-  surfaceHigh:   '#2a2a2a',
-  surfaceLowest: '#0e0e0e',
-  outline:       'rgba(96,62,57,0.5)',      // outline-variant at half opacity
-  outlineStrong: '#b18780',                  // outline
-  primary:       '#ffb4a8',                  // warm salmon signal
-  primaryDeep:   '#c00100',                  // inverse-primary — CTA red
-  primaryGlow:   'rgba(192,1,0,0.35)',
-  onSurface:     '#e5e2e1',
-  onSurfaceDim:  'rgba(229,226,225,0.45)',
-  onSurfaceFaint:'rgba(229,226,225,0.25)',
+  bg:          '#F6F4F1',
+  surface:     '#FFFFFF',
+  border:      '#E2DFDB',
+  borderLight: '#EEECE8',
+  ink:         '#111111',
+  inkSub:      '#555555',
+  inkMuted:    '#999999',
+  inkFaint:    '#BBBBBB',
+  chip:        '#EEECE8',
 };
 
-const FONT_HEAD = 'Manrope, Arial, sans-serif';
-const FONT_LABEL = "'Space Grotesk', monospace";
+const FONT_HEAD  = 'Manrope, Arial, sans-serif';
+const FONT_LABEL = 'Manrope, Arial, sans-serif';
 
-// Shared sx helpers
-const hudBorder = { border: `1px solid ${C.outline}` };
+const hudBorder = { border: `1px solid ${C.border}` };
 const sharp = { borderRadius: 0 };
 
 function SkeletonCard() {
   return (
-    <Box sx={{
-      flex: '1 1 0', minWidth: 200,
-      ...sharp, overflow: 'hidden',
-      ...hudBorder,
-      bgcolor: C.surfaceLowest,
-    }}>
+    <Box sx={{ width: '100%', ...sharp, overflow: 'hidden', border: `1px solid ${C.border}` }}>
       <Box sx={{
-        height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'shimmer 1.6s ease-in-out infinite',
-        '@keyframes shimmer': { '0%,100%': { opacity: 0.35 }, '50%': { opacity: 0.7 } },
+        height: 210, bgcolor: C.chip,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 1.75,
       }}>
-        <CircularProgress size={22} sx={{ color: 'rgba(192,1,0,0.5)' }} />
+        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          {[0, 1, 2].map(i => (
+            <Box key={i} sx={{
+              width: 5, height: 5, bgcolor: C.inkFaint, borderRadius: '50%',
+              animation: 'dotBounce 1.2s ease-in-out infinite',
+              animationDelay: `${i * 0.2}s`,
+              '@keyframes dotBounce': {
+                '0%, 80%, 100%': { transform: 'scale(0.6)', opacity: 0.3 },
+                '40%': { transform: 'scale(1)', opacity: 1 },
+              },
+            }} />
+          ))}
+        </Box>
+        <Typography sx={{
+          fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+          letterSpacing: '0.12em', textTransform: 'uppercase', color: C.inkFaint,
+        }}>
+          GENERATING
+        </Typography>
       </Box>
-      <Box sx={{ p: 1.25 }}>
-        <Box sx={{ height: 9, width: '55%', ...sharp, bgcolor: C.surfaceHigh }} />
+      <Box sx={{ px: 1.5, py: 1, borderTop: `1px solid ${C.border}`, bgcolor: C.surface }}>
+        <Box sx={{ height: 7, width: '38%', bgcolor: C.borderLight }} />
       </Box>
     </Box>
   );
@@ -76,19 +86,11 @@ function SkeletonCard() {
 
 function DesignCard({ option, isSelected, isRegenerating, onSelect, onRegenerate, onExpand, regenerateTooltip }) {
   return (
-    <Box sx={{
-      flex: '1 1 0', minWidth: 200, position: 'relative',
-      ...sharp, overflow: 'hidden',
-      border: '1px solid',
-      borderColor: isSelected ? C.primaryDeep : C.outline,
-      boxShadow: isSelected ? `0 0 24px ${C.primaryGlow}` : 'none',
-      cursor: 'pointer',
-      transition: 'border-color 0.05s steps(1), box-shadow 0.05s steps(1)',
-      '&:hover': { borderColor: isSelected ? C.primaryDeep : C.outlineStrong },
-    }}
+    <Box
+      sx={{ width: '100%', position: 'relative', ...sharp, overflow: 'hidden', cursor: 'pointer' }}
       onClick={() => onSelect(option)}
     >
-      {/* Image — click opens old-film lightbox */}
+      {/* Image */}
       <Box sx={{ position: 'relative', overflow: 'hidden', '&:hover .expand-hint': { opacity: 1 } }}>
         <Box
           component="img"
@@ -96,65 +98,52 @@ function DesignCard({ option, isSelected, isRegenerating, onSelect, onRegenerate
           alt={option.label}
           onClick={(e) => { e.stopPropagation(); onExpand(option); }}
           sx={{
-            width: '100%', height: 130, objectFit: 'cover', display: 'block',
-            filter: 'grayscale(20%) contrast(1.05)',
-            transition: 'transform 0.05s steps(1), filter 0.05s steps(1)',
-            '&:hover': { transform: 'scale(1.03)', filter: 'grayscale(30%) contrast(1.1) brightness(0.88)' },
+            width: '100%', height: 210, objectFit: 'cover', display: 'block',
+            filter: 'grayscale(8%) contrast(1.04)',
+            transition: 'filter 0.2s ease',
+            '&:hover': { filter: 'grayscale(18%) contrast(1.08) brightness(0.88)' },
             cursor: 'zoom-in',
           }}
         />
-        {/* Expand hint overlay */}
         <Box className="expand-hint" sx={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: 'rgba(0,0,0,0.28)',
-          opacity: 0, transition: 'opacity 0.05s steps(1)',
+          bgcolor: 'rgba(0,0,0,0.18)', opacity: 0, transition: 'opacity 0.2s ease',
         }}>
-          <OpenInFullIcon sx={{ fontSize: 18, color: C.primary, opacity: 0.9 }} />
+          <OpenInFullIcon sx={{ fontSize: 18, color: 'rgba(255,255,255,0.85)' }} />
         </Box>
       </Box>
 
-      {isRegenerating && (
-        <Box sx={{
-          position: 'absolute', inset: 0, bgcolor: 'rgba(13,13,13,0.7)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <CircularProgress size={24} sx={{ color: C.primary }} />
-        </Box>
-      )}
-
-      {isSelected && !isRegenerating && (
-        <Box sx={{
-          position: 'absolute', top: 6, right: 6,
-          bgcolor: C.primaryDeep, display: 'flex', p: 0.25,
-        }}>
-          <CheckCircleIcon sx={{ fontSize: 13, color: '#fff' }} />
-        </Box>
-      )}
-
-      {/* Lighting label tag — HUD chip style */}
+      {/* Lighting tag — top left */}
       <Box sx={{
-        position: 'absolute', top: 6, left: 6,
-        bgcolor: 'rgba(13,13,13,0.75)', backdropFilter: 'blur(8px)',
-        px: 0.75, py: 0.2,
-        border: `1px solid ${C.outline}`,
+        position: 'absolute', top: 8, left: 8,
+        bgcolor: 'rgba(0,0,0,0.52)', backdropFilter: 'blur(6px)',
+        px: 0.75, py: 0.25,
       }}>
-        <Typography sx={{ fontFamily: FONT_LABEL, fontSize: 8, color: C.primary, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        <Typography sx={{ fontFamily: FONT_HEAD, fontSize: 8, color: 'rgba(255,255,255,0.82)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           {option.lightingLabel}
         </Typography>
       </Box>
 
+      {/* Selected check — top right */}
+      {isSelected && !isRegenerating && (
+        <Box sx={{ position: 'absolute', top: 8, right: 8, bgcolor: C.ink, display: 'flex', p: 0.35 }}>
+          <CheckCircleIcon sx={{ fontSize: 12, color: '#fff' }} />
+        </Box>
+      )}
+
+      {/* Footer */}
       <Box sx={{
-        px: 1.25, py: 0.75,
-        bgcolor: isSelected ? 'rgba(192,1,0,0.12)' : C.surfaceLowest,
+        px: 1.5, py: 1,
+        bgcolor: isSelected ? C.chip : C.surface,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderTop: `1px solid ${C.outline}`,
+        borderTop: `1px solid ${isSelected ? C.ink : C.border}`,
+        transition: 'border-color 0.15s, background-color 0.15s',
       }}>
         <Typography sx={{
           fontFamily: FONT_HEAD, fontWeight: isSelected ? 700 : 400, fontSize: 11,
-          color: isSelected ? C.primary : C.onSurfaceDim,
-          letterSpacing: '0.04em',
-          textTransform: 'uppercase',
+          color: isSelected ? C.ink : C.inkMuted,
+          letterSpacing: '0.05em', textTransform: 'uppercase',
         }}>
           {option.label}
         </Typography>
@@ -163,15 +152,22 @@ function DesignCard({ option, isSelected, isRegenerating, onSelect, onRegenerate
             size="small"
             onClick={(e) => { e.stopPropagation(); onRegenerate(option); }}
             disabled={isRegenerating}
-            sx={{
-              p: 0.4, ...sharp, color: C.onSurfaceFaint,
-              '&:hover': { color: C.primary, bgcolor: 'rgba(192,1,0,0.1)' },
-            }}
+            sx={{ p: 0.4, ...sharp, color: C.inkFaint, '&:hover': { color: C.ink, bgcolor: C.chip } }}
           >
             <RefreshIcon sx={{ fontSize: 13 }} />
           </IconButton>
         </Tooltip>
       </Box>
+
+      {/* Regenerating overlay */}
+      {isRegenerating && (
+        <Box sx={{
+          position: 'absolute', inset: 0, bgcolor: 'rgba(246,244,241,0.78)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <CircularProgress size={22} sx={{ color: C.inkMuted }} />
+        </Box>
+      )}
     </Box>
   );
 }
@@ -184,11 +180,9 @@ function HistoryThumb({ item, isActive, onClick, onExpand }) {
         onDoubleClick={(e) => { e.stopPropagation(); onExpand(item); }}
         sx={{
           width: 52, height: 36, flexShrink: 0, ...sharp, overflow: 'hidden',
-          cursor: 'pointer', border: '1px solid',
-          borderColor: isActive ? C.primaryDeep : C.outline,
-          boxShadow: isActive ? `0 0 10px ${C.primaryGlow}` : 'none',
-          transition: 'border-color 0.05s steps(1)',
-          '&:hover': { borderColor: C.outlineStrong, transform: 'scale(1.08)' },
+          cursor: 'pointer', border: `1px solid ${isActive ? C.ink : C.border}`,
+          transition: 'border-color 0.15s',
+          '&:hover': { borderColor: C.inkMuted },
           position: 'relative',
         }}
       >
@@ -196,7 +190,7 @@ function HistoryThumb({ item, isActive, onClick, onExpand }) {
           component="img"
           src={item.url}
           alt={item.label}
-          sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'grayscale(15%)' }}
+          sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'grayscale(10%)' }}
         />
       </Box>
     </Tooltip>
@@ -233,6 +227,7 @@ export default function BridgeDesignerPanel() {
 
   const isMobile = useMediaQuery('(max-width:834px)');
   const fileInputRef = useRef(null);
+  const designSliderRef = useRef(null);
   const text = getUIText(language);
 
   const [pendingStyles, setPendingStyles] = useState(designConfig.styleIds);
@@ -240,11 +235,17 @@ export default function BridgeDesignerPanel() {
   const [isAnalysing, setIsAnalysing] = useState(false);
   const [captureSource, setCaptureSource] = useState(null);
   const [feedback, setFeedback] = useState(null);
-  const [lightboxItem, setLightboxItem] = useState(null); // { url, label }
+  const [lightboxItem, setLightboxItem] = useState(null);
+  const [activeDesignSlide, setActiveDesignSlide] = useState(0);
 
   useEffect(() => {
     if (designerOpen) track('designer_opened');
   }, [designerOpen]);
+
+  useEffect(() => {
+    setActiveDesignSlide(0);
+    designSliderRef.current?.slickGoTo(0);
+  }, [designOptions]);
 
   const toggleStyle = (id) => {
     setPendingStyles(prev =>
@@ -348,50 +349,51 @@ export default function BridgeDesignerPanel() {
         <Box sx={{
           position: 'fixed', bottom: 68, left: '50%', transform: 'translateX(-50%)',
           zIndex: 9997,
-          bgcolor: 'rgba(13,13,13,0.92)', backdropFilter: 'blur(16px)',
-          border: `1px solid ${C.outline}`,
-          borderLeft: `2px solid ${C.primaryDeep}`,
+          bgcolor: 'rgba(246,244,241,0.88)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          border: `1px solid ${C.border}`,
           ...sharp,
           px: 1.5, py: 0.75,
           display: 'flex', alignItems: 'center', gap: 1.25,
           width: 'min(92vw, 380px)',
-          boxShadow: `0 0 32px ${C.primaryGlow}`,
-          animation: 'miniSlide 0.15s steps(4)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          animation: 'miniSlide 0.2s ease-out',
           '@keyframes miniSlide': {
             from: { opacity: 0, transform: 'translateX(-50%) translateY(6px)' },
             to:   { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
           },
         }}>
           <Box component="img" src={selectedDesign.url} alt={selectedDesign.label}
-            sx={{ width: 48, height: 32, objectFit: 'cover', flexShrink: 0, filter: 'grayscale(15%)' }} />
-          <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 500, fontSize: 10,
-            color: C.primary, whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            sx={{ width: 48, height: 32, objectFit: 'cover', flexShrink: 0, filter: 'grayscale(10%)', border: `1px solid ${C.border}` }} />
+          <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 600, fontSize: 10,
+            color: C.ink, whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             {selectedDesign.label}
           </Typography>
           <Slider
             value={Math.round(designBlendOpacity * 100)}
             onChange={(_, v) => setDesignBlendOpacity(v / 100)}
             min={10} max={100} size="small" sx={{
-              flex: 1, color: C.primaryDeep,
-              '& .MuiSlider-thumb': { width: 12, height: 12, bgcolor: C.primary, ...sharp },
-              '& .MuiSlider-rail': { bgcolor: C.surfaceHigh },
+              flex: 1, color: C.ink,
+              '& .MuiSlider-thumb': { width: 12, height: 12, bgcolor: C.ink, ...sharp },
+              '& .MuiSlider-rail': { bgcolor: C.border },
             }}
           />
-          <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 400, fontSize: 10,
-            color: C.onSurfaceDim, minWidth: 26, textAlign: 'right', flexShrink: 0 }}>
+          <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+            color: C.inkMuted, minWidth: 26, textAlign: 'right', flexShrink: 0 }}>
             {Math.round(designBlendOpacity * 100)}%
           </Typography>
           <Tooltip title={text.designer.miniBarViewDesigns} placement="top">
             <IconButton size="small" onClick={() => { setDesignerOpen(true); setAgentChatOpen(false); setShowAccordion(false); }}
-              sx={{ color: C.primary, p: 0.5, flexShrink: 0, ...sharp,
-                '&:hover': { color: '#fff', bgcolor: 'rgba(192,1,0,0.15)' } }}>
+              sx={{ color: C.inkMuted, p: 0.5, flexShrink: 0, ...sharp,
+                '&:hover': { color: C.ink, bgcolor: C.chip } }}>
               <OpenInFullIcon sx={{ fontSize: 13 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title={text.designer.miniBarClearOverlay} placement="top">
             <IconButton size="small" onClick={() => setSelectedDesign(null)}
-              sx={{ color: C.onSurfaceFaint, p: 0.5, flexShrink: 0, ...sharp,
-                '&:hover': { color: C.onSurface } }}>
+              sx={{ color: C.inkFaint, p: 0.5, flexShrink: 0, ...sharp,
+                '&:hover': { color: C.ink } }}>
               <CloseIcon sx={{ fontSize: 13 }} />
             </IconButton>
           </Tooltip>
@@ -429,146 +431,134 @@ export default function BridgeDesignerPanel() {
         transform: { xs: 'none', sm: 'translateX(-50%)' },
         width: { xs: '100%', sm: 'min(94vw, 860px)' },
         maxHeight: { xs: '72vh', sm: 'none' },
-        display: 'flex',
-        flexDirection: 'column',
-        ...sharp,
-        bgcolor: 'rgba(13,13,13,0.94)', backdropFilter: 'blur(22px)',
-        border: `1px solid ${C.outline}`,
-        borderTop: `2px solid ${C.primaryDeep}`,
-        boxShadow: `0 0 40px rgba(192,1,0,0.08)`,
         zIndex: 9998,
-        animation: 'panelSlide 0.18s steps(6)',
+        display: 'flex', flexDirection: 'column',
+      }}>
+      <Box sx={{
+        flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        ...sharp,
+        bgcolor: 'rgba(246,244,241,0.88)',
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
+        border: `1px solid ${C.border}`,
+        boxShadow: '0 8px 40px rgba(0,0,0,0.14)',
+        animation: 'panelSlide 0.22s ease-out',
         '@keyframes panelSlide': {
-          from: { opacity: 0, transform: { xs: 'translateY(12px)', sm: 'translateX(-50%) translateY(12px)' } },
-          to:   { opacity: 1, transform: { xs: 'translateY(0)',    sm: 'translateX(-50%) translateY(0)' } },
+          from: { opacity: 0, transform: 'translateY(12px)' },
+          to:   { opacity: 1, transform: 'translateY(0)' },
         },
       }}>
-
-        {/* Mobile drag handle */}
-        <Box sx={{ display: { xs: 'flex', sm: 'none' }, justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
-          <Box sx={{ width: 28, height: 2, bgcolor: C.outline }} />
-        </Box>
 
         {/* Header */}
         <Box sx={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          px: 2, py: 1.25,
-          borderBottom: `1px solid ${C.outline}`,
-          position: 'relative',
+          px: 3, py: 2,
+          borderBottom: `1px solid ${C.border}`,
         }}>
-          {/* Left accent bar */}
-          <Box sx={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, bgcolor: C.primaryDeep }} />
-
-          <Stack direction="row" alignItems="center" spacing={1.25} sx={{ pl: 0.5 }}>
-            <AutoAwesomeIcon sx={{ color: C.primary, fontSize: 14 }} />
-            <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 800, fontSize: 'clamp(11px,2vw,13px)',
-              color: C.onSurface, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <AutoAwesomeIcon sx={{ color: C.inkMuted, fontSize: 14 }} />
+            <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 800, fontSize: 12,
+              color: C.ink, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               {text.designer.title}
             </Typography>
             {anyBusy && (
-              <Chip
-                label={statusLabel}
-                size="small" sx={{
-                  fontFamily: FONT_LABEL, fontSize: 9, height: 18, ...sharp,
-                  bgcolor: 'rgba(192,1,0,0.12)', color: C.primary,
-                  border: `1px solid rgba(192,1,0,0.3)`,
-                  letterSpacing: '0.08em',
-                }}
-              />
+              <Box sx={{
+                px: 1, py: 0.25,
+                bgcolor: C.chip, border: `1px solid ${C.border}`,
+              }}>
+                <Typography sx={{ fontFamily: FONT_HEAD, fontSize: 9, color: C.inkMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  {statusLabel}
+                </Typography>
+              </Box>
             )}
           </Stack>
 
-          <Tooltip title={text.common.close} placement="left">
-            <IconButton size="small" onClick={() => setDesignerOpen(false)}
-              sx={{ color: C.onSurfaceFaint, ...sharp, '&:hover': { color: C.onSurface, bgcolor: 'rgba(192,1,0,0.1)' } }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Typography
+            onClick={() => setDesignerOpen(false)}
+            sx={{
+              fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: C.inkMuted, cursor: 'pointer', transition: 'color 0.15s',
+              '&:hover': { color: C.ink },
+            }}
+          >
+            CLOSE
+          </Typography>
         </Box>
 
         {/* Body */}
-        <Box sx={{ p: 2, pb: { xs: 'max(16px, env(safe-area-inset-bottom))', sm: 2 }, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', flex: 1, '&::-webkit-scrollbar': { width: '3px' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(96,62,57,0.6)' } }}>
+        <Box sx={{
+          p: 3, pb: { xs: 'max(16px, env(safe-area-inset-bottom))', sm: 3 },
+          display: 'flex', flexDirection: 'column', gap: 2.5,
+          overflowY: 'auto', flex: 1,
+          '&::-webkit-scrollbar': { width: '3px' },
+          '&::-webkit-scrollbar-thumb': { bgcolor: C.border },
+        }}>
           <Box>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handleFileChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
 
             {/* Landscape reference */}
             {uploadedLandscape ? (
               <Stack direction="row" alignItems="center" spacing={1.5} sx={{
-                mb: 2, p: 1.25,
-                bgcolor: 'rgba(192,1,0,0.06)',
-                border: `1px solid rgba(192,1,0,0.25)`,
-                borderLeft: `2px solid ${C.primaryDeep}`,
+                mb: 2.5, p: 1.5,
+                bgcolor: C.surface, border: `1px solid ${C.border}`,
               }}>
-                <Box
-                  component="img"
-                  src={uploadedLandscape}
-                  alt="Landscape reference"
-                  sx={{ width: 80, height: 52, objectFit: 'cover', flexShrink: 0, filter: 'grayscale(20%)' }}
-                />
+                <Box component="img" src={uploadedLandscape} alt="Landscape reference"
+                  sx={{ width: 80, height: 52, objectFit: 'cover', flexShrink: 0, filter: 'grayscale(10%)', border: `1px solid ${C.borderLight}` }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 700, fontSize: 10,
-                    color: C.primary, mb: 0.25, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 11,
+                    color: C.ink, mb: 0.25, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                     {captureSource === 'ar' ? text.designer.usingArCapture : text.designer.usingPhoto}
                   </Typography>
-                  <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 400, fontSize: 9,
-                    color: C.onSurfaceFaint, lineHeight: 1.5 }}>
+                  <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 12, color: C.inkMuted, lineHeight: 1.6 }}>
                     {text.designer.usingPhotoBody}
                   </Typography>
                 </Box>
                 <Tooltip title={text.common.remove} placement="left">
                   <IconButton size="small"
                     onClick={() => { setUploadedLandscape(null); setCaptureSource(null); }}
-                    sx={{ color: C.onSurfaceFaint, flexShrink: 0, ...sharp, '&:hover': { color: C.onSurface } }}>
+                    sx={{ color: C.inkFaint, flexShrink: 0, ...sharp, '&:hover': { color: C.ink } }}>
                     <CloseIcon sx={{ fontSize: 14 }} />
                   </IconButton>
                 </Tooltip>
               </Stack>
             ) : (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
-                {/* Upload photo */}
-                <Stack direction="row" alignItems="center" spacing={1} flexGrow={1}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2.5 }}>
+                <Stack direction="row" alignItems="center" spacing={1.25} flexGrow={1}
                   onClick={() => fileInputRef.current?.click()}
                   sx={{
-                    p: 1.25, cursor: 'pointer',
-                    border: `1px dashed ${C.outline}`,
-                    transition: 'border-color 0.05s steps(1)',
-                    '&:hover': { borderColor: C.outlineStrong, bgcolor: 'rgba(229,226,225,0.02)' },
+                    p: 1.5, cursor: 'pointer',
+                    border: `1px dashed ${C.border}`, bgcolor: C.surface,
+                    transition: 'border-color 0.15s',
+                    '&:hover': { borderColor: C.inkMuted },
                   }}>
-                  <AddPhotoAlternateOutlinedIcon sx={{ color: C.onSurfaceFaint, fontSize: 18, flexShrink: 0 }} />
+                  <AddPhotoAlternateOutlinedIcon sx={{ color: C.inkFaint, fontSize: 18, flexShrink: 0 }} />
                   <Box>
-                    <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 500, fontSize: 10,
-                      color: C.onSurfaceDim, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 600, fontSize: 11,
+                      color: C.inkSub, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       {text.designer.uploadPhoto}
                     </Typography>
-                    <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 400, fontSize: 9, color: C.onSurfaceFaint }}>
+                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11, color: C.inkFaint }}>
                       {text.designer.uploadPhotoBody}
                     </Typography>
                   </Box>
                 </Stack>
-
-                {/* Capture AR */}
-                <Stack direction="row" alignItems="center" spacing={1} flexGrow={1}
+                <Stack direction="row" alignItems="center" spacing={1.25} flexGrow={1}
                   onClick={handleCaptureAR}
                   sx={{
-                    p: 1.25, cursor: 'pointer',
-                    border: `1px dashed rgba(192,1,0,0.3)`,
+                    p: 1.5, cursor: 'pointer',
+                    border: `1px dashed ${C.border}`, bgcolor: C.surface,
                     opacity: cameraFeedAvailable ? 1 : 0.5,
-                    transition: 'border-color 0.05s steps(1)',
-                    '&:hover': { borderColor: C.primaryDeep, bgcolor: 'rgba(192,1,0,0.04)' },
+                    transition: 'border-color 0.15s',
+                    '&:hover': { borderColor: C.inkMuted },
                   }}>
-                  <CameraAltOutlinedIcon sx={{ color: 'rgba(192,1,0,0.6)', fontSize: 18, flexShrink: 0 }} />
+                  <CameraAltOutlinedIcon sx={{ color: C.inkFaint, fontSize: 18, flexShrink: 0 }} />
                   <Box>
-                    <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 500, fontSize: 10,
-                      color: C.primary, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 600, fontSize: 11,
+                      color: C.inkSub, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       {text.designer.captureArView}
                     </Typography>
-                    <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 400, fontSize: 9, color: C.onSurfaceFaint }}>
+                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11, color: C.inkFaint }}>
                       {cameraFeedAvailable ? text.designer.captureArViewBody : text.designer.captureArUnavailable}
                     </Typography>
                   </Box>
@@ -576,119 +566,152 @@ export default function BridgeDesignerPanel() {
               </Stack>
             )}
 
-            {/* Style chips */}
-            <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 500, fontSize: 9,
-              color: C.onSurfaceFaint, letterSpacing: '0.2em', textTransform: 'uppercase', mb: 0.75 }}>
+            {/* Style */}
+            <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+              color: C.inkFaint, letterSpacing: '0.12em', textTransform: 'uppercase', mb: 1 }}>
               {text.designer.styleLabel}
             </Typography>
-            <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.5 }}>
+            <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 2 }}>
               {DESIGN_STYLES.map(s => {
                 const on = pendingStyles.includes(s.id);
                 return (
-                  <Chip
+                  <Box
                     key={s.id}
-                    label={text.designer.styleLabels?.[s.id] ?? s.label}
-                    size="small"
                     onClick={() => toggleStyle(s.id)}
                     sx={{
-                      fontFamily: FONT_LABEL, fontSize: 10, fontWeight: on ? 700 : 400,
-                      cursor: 'pointer', ...sharp,
-                      bgcolor: on ? 'rgba(192,1,0,0.18)' : C.surfaceHigh,
-                      color: on ? C.primary : C.onSurfaceDim,
-                      border: '1px solid',
-                      borderColor: on ? C.primaryDeep : C.outline,
-                      letterSpacing: '0.06em',
-                      transition: 'border-color 0.05s steps(1), background-color 0.05s steps(1)',
-                      '&:hover': { bgcolor: on ? 'rgba(192,1,0,0.28)' : C.surfaceHigh, borderColor: on ? C.primaryDeep : C.outlineStrong },
+                      px: 1.5, py: 0.6, cursor: 'pointer',
+                      bgcolor: on ? C.ink : C.surface,
+                      color: on ? '#fff' : C.inkSub,
+                      border: `1px solid ${on ? C.ink : C.border}`,
+                      transition: 'background-color 0.15s, color 0.15s, border-color 0.15s',
+                      '&:hover': { borderColor: C.ink, color: on ? '#fff' : C.ink },
                     }}
-                  />
+                  >
+                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: on ? 700 : 400, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      {text.designer.styleLabels?.[s.id] ?? s.label}
+                    </Typography>
+                  </Box>
                 );
               })}
             </Stack>
 
-            {/* Lighting chips */}
+            {/* Lighting */}
             <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap">
-              <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 500, fontSize: 9,
-                color: C.onSurfaceFaint, letterSpacing: '0.2em', textTransform: 'uppercase', mr: 0.25 }}>
+              <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+                color: C.inkFaint, letterSpacing: '0.12em', textTransform: 'uppercase', mr: 0.5 }}>
                 {text.designer.lightingLabel}
               </Typography>
               {LIGHTING_MODES.map(l => {
                 const on = pendingLighting === l.id;
                 return (
-                  <Chip
+                  <Box
                     key={l.id}
-                    label={text.designer.lightingLabels?.[l.id] ?? l.label}
-                    size="small"
                     onClick={() => setPendingLighting(l.id)}
                     sx={{
-                      fontFamily: FONT_LABEL, fontSize: 10, fontWeight: on ? 700 : 400,
-                      cursor: 'pointer', ...sharp,
-                      bgcolor: on ? 'rgba(177,135,128,0.18)' : C.surfaceHigh,
-                      color: on ? C.outlineStrong : C.onSurfaceDim,
-                      border: '1px solid',
-                      borderColor: on ? C.outlineStrong : C.outline,
-                      letterSpacing: '0.06em',
-                      transition: 'border-color 0.05s steps(1), background-color 0.05s steps(1)',
-                      '&:hover': { borderColor: C.outlineStrong },
+                      px: 1.5, py: 0.6, cursor: 'pointer',
+                      bgcolor: on ? C.chip : C.surface,
+                      color: on ? C.ink : C.inkMuted,
+                      border: `1px solid ${on ? C.ink : C.border}`,
+                      transition: 'background-color 0.15s, border-color 0.15s',
+                      '&:hover': { borderColor: C.ink, color: C.ink },
                     }}
-                  />
+                  >
+                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: on ? 700 : 400, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      {text.designer.lightingLabels?.[l.id] ?? l.label}
+                    </Typography>
+                  </Box>
                 );
               })}
             </Stack>
 
-            {/* Generate CTA — own row, always right-aligned */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.75 }}>
-              <Chip
-                icon={<AutoAwesomeIcon sx={{ fontSize: '13px !important',
-                  color: anyBusy ? `${C.onSurfaceFaint} !important` : `${C.onSurface} !important` }} />}
-                label={uploadedLandscape ? text.designer.generateForPhoto(pendingStyles.length) : text.designer.generate(pendingStyles.length)}
+            {/* Generate CTA */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1.5 }}>
+              <Box
+                component="button"
                 onClick={handleGenerate}
                 disabled={anyBusy}
                 sx={{
-                  fontFamily: FONT_LABEL, fontSize: 10, fontWeight: 700,
-                  cursor: 'pointer', ...sharp,
-                  bgcolor: anyBusy ? C.surfaceHigh : C.primaryDeep,
-                  color: anyBusy ? C.onSurfaceFaint : '#fff',
-                  border: '1px solid',
-                  borderColor: anyBusy ? C.outline : C.primaryDeep,
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                  boxShadow: anyBusy ? 'none' : `0 0 16px ${C.primaryGlow}`,
-                  '&:hover': { bgcolor: anyBusy ? undefined : '#a00000' },
-                  '& .MuiChip-icon': { ml: '6px' },
-                  '&.Mui-disabled': { opacity: 0.4 },
+                  display: 'flex', alignItems: 'center', gap: 0.75,
+                  px: 2, py: 0.85,
+                  bgcolor: anyBusy ? C.chip : C.ink, color: anyBusy ? C.inkFaint : '#fff',
+                  border: `1px solid ${anyBusy ? C.border : C.ink}`,
+                  fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 11,
+                  letterSpacing: '0.1em', textTransform: 'uppercase',
+                  cursor: anyBusy ? 'default' : 'pointer',
+                  transition: 'background-color 0.15s',
+                  '&:hover:not(:disabled)': { bgcolor: '#333' },
+                  '&:disabled': { opacity: 0.45 },
                 }}
-              />
+              >
+                <AutoAwesomeIcon sx={{ fontSize: 13 }} />
+                {uploadedLandscape ? text.designer.generateForPhoto(pendingStyles.length) : text.designer.generate(pendingStyles.length)}
+              </Box>
             </Box>
           </Box>
 
-          {/* Design cards */}
+          {/* Design carousel */}
           {(designOptions.length > 0 || isGeneratingDesigns) && (
-            <Stack direction="row" spacing={1.5}
-              sx={{ overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
-              {isGeneratingDesigns && designOptions.length === 0 ? (
-                pendingStyles.map(id => <SkeletonCard key={id} />)
-              ) : (
-                designOptions.map(option => (
-                  <DesignCard
-                    key={option.id}
-                    option={option}
-                    isSelected={selectedDesign?.id === option.id}
-                    isRegenerating={regeneratingDesignId === option.id}
-                    onSelect={handleSelectCard}
-                    onRegenerate={handleRegenerate}
-                    onExpand={(opt) => setLightboxItem({ url: opt.url, label: opt.label })}
-                    regenerateTooltip={text.designer.regenerateStyle}
-                  />
-                ))
+            <Box>
+              <Box sx={{ border: `1px solid ${C.border}`, ...sharp, overflow: 'hidden' }}>
+                {isGeneratingDesigns && designOptions.length === 0 ? (
+                  <SkeletonCard />
+                ) : (
+                  <ImageSlider
+                    ref={designSliderRef}
+                    dots={false}
+                    arrows={false}
+                    infinite={false}
+                    speed={300}
+                    slidesToShow={1}
+                    slidesToScroll={1}
+                    beforeChange={(_, next) => setActiveDesignSlide(next)}
+                  >
+                    {designOptions.map(option => (
+                      <DesignCard
+                        key={option.id}
+                        option={option}
+                        isSelected={selectedDesign?.id === option.id}
+                        isRegenerating={regeneratingDesignId === option.id}
+                        onSelect={handleSelectCard}
+                        onRegenerate={handleRegenerate}
+                        onExpand={(opt) => setLightboxItem({ url: opt.url, label: opt.label })}
+                        regenerateTooltip={text.designer.regenerateStyle}
+                      />
+                    ))}
+                  </ImageSlider>
+                )}
+              </Box>
+
+              {/* Slide labels — like info panel */}
+              {designOptions.length > 1 && (
+                <Box sx={{ display: 'flex', gap: 2.5, mt: 1.5, overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
+                  {designOptions.map((opt, i) => (
+                    <Typography
+                      key={opt.id}
+                      onClick={() => designSliderRef.current?.slickGoTo(i)}
+                      sx={{
+                        fontFamily: FONT_HEAD, fontWeight: activeDesignSlide === i ? 700 : 400,
+                        fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
+                        color: activeDesignSlide === i ? C.ink : C.inkFaint,
+                        borderBottom: activeDesignSlide === i ? `1px solid ${C.ink}` : '1px solid transparent',
+                        pb: 0.25, cursor: 'pointer', flexShrink: 0,
+                        transition: 'color 0.15s, border-color 0.15s',
+                        '&:hover': { color: C.inkMuted },
+                      }}
+                    >
+                      {opt.label}
+                    </Typography>
+                  ))}
+                </Box>
               )}
-            </Stack>
+            </Box>
           )}
 
           {/* Blend slider */}
           {selectedDesign && (
             <Stack direction="row" alignItems="center" spacing={1.5}>
-              <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 500, fontSize: 9,
-                color: C.onSurfaceFaint, whiteSpace: 'nowrap', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+              <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+                color: C.inkFaint, whiteSpace: 'nowrap', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                 {text.designer.blendLabel}
               </Typography>
               <Slider
@@ -696,28 +719,23 @@ export default function BridgeDesignerPanel() {
                 onChange={(_, v) => setDesignBlendOpacity(v / 100)}
                 min={10} max={100} size="small"
                 sx={{
-                  color: C.primaryDeep,
-                  '& .MuiSlider-thumb': {
-                    width: 14, height: 14,
-                    bgcolor: C.primary,
-                    ...sharp,
-                    boxShadow: `0 0 8px ${C.primaryGlow}`,
-                  },
-                  '& .MuiSlider-rail': { bgcolor: C.surfaceHigh },
+                  color: C.ink,
+                  '& .MuiSlider-thumb': { width: 14, height: 14, bgcolor: C.ink, ...sharp },
+                  '& .MuiSlider-rail': { bgcolor: C.border },
                 }}
               />
-              <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 400, fontSize: 10,
-                color: C.primary, minWidth: 30, textAlign: 'right' }}>
+              <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+                color: C.inkSub, minWidth: 30, textAlign: 'right' }}>
                 {Math.round(designBlendOpacity * 100)}%
               </Typography>
             </Stack>
           )}
 
-          {/* History strip */}
+          {/* History */}
           {designHistory.length > 0 && (
             <Box>
-              <Typography sx={{ fontFamily: FONT_LABEL, fontWeight: 500, fontSize: 9,
-                color: C.onSurfaceFaint, letterSpacing: '0.2em', textTransform: 'uppercase', mb: 0.75 }}>
+              <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+                color: C.inkFaint, letterSpacing: '0.12em', textTransform: 'uppercase', mb: 1 }}>
                 {text.designer.historyLabel}
               </Typography>
               <Stack direction="row" spacing={0.75}
@@ -735,6 +753,7 @@ export default function BridgeDesignerPanel() {
             </Box>
           )}
         </Box>
+      </Box>
       </Box>
 
       {lightboxItem && (
