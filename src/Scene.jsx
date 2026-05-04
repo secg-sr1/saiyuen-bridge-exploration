@@ -1,10 +1,9 @@
 /* eslint-disable react/no-unknown-property */
 
-import { Suspense } from 'react';
 import { styled } from '@mui/material/styles';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, Suspense } from 'react';
 import { useLoader, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Html, useProgress } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Html, useProgress, Environment, useTexture } from '@react-three/drei';
 import { setGl } from './utils/screenshot';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import {
@@ -16,7 +15,12 @@ import {
   Box3,
   Vector3,
   MathUtils,
+  ACESFilmicToneMapping,
+  SRGBColorSpace,
 } from 'three';
+
+import concreteAlbedoUrl from './assets/glb-models/concrete.png';
+import metalAlbedoUrl from './assets/glb-models/metal.png';
 
 // Module-level stripe texture cache — created lazily, reused across renders
 const _texCache = {};
@@ -48,6 +52,35 @@ function jackStripe(bgHex, stripeHex, repeat = 10) {
   return tex;
 }
 
+/** Fine aggregate bump shared by bridge stone / concrete presets (cached). */
+function bridgeNoiseBumpTexture() {
+  const key = '_bridgeNoiseBump';
+  if (_texCache[key]) return _texCache[key];
+  const n = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = n;
+  canvas.height = n;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(n, n);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = 105 + Math.random() * 50;
+    d[i] = v;
+    d[i + 1] = v;
+    d[i + 2] = v;
+    d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const tex = new CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = RepeatWrapping;
+  tex.repeat.set(8, 8);
+  tex.needsUpdate = true;
+  _texCache[key] = tex;
+  return tex;
+}
+
+const BRIDGE_BUMP = bridgeNoiseBumpTexture();
+
 function beetleStripe(bgHex, stripeHex, repeat = 7) {
   const key = `beetle|${bgHex}|${stripeHex}`;
   if (_texCache[key]) return _texCache[key];
@@ -72,19 +105,59 @@ function beetleStripe(bgHex, stripeHex, repeat = 7) {
   return tex;
 }
 
-// Material preset table — module-level so it's not re-created on every render
+// Material preset table — PBR fields use MeshStandardMaterial clearcoat / envMapIntensity (three r152+).
 const PRESETS = {
-  granite:     null,
-  concrete:    { color: 0xc0bdb8, roughness: 0.85, metalness: 0    },
-  limestone:   { color: 0xe8dcc8, roughness: 0.88, metalness: 0    },
-  marble:      { color: 0xf2f0ee, roughness: 0.35, metalness: 0.05 },
-  steel:       { color: 0x8899aa, roughness: 0.25, metalness: 0.9  },
-  wood:        { color: 0x8b5e3c, roughness: 0.95, metalness: 0    },
-  gold:        { color: 0xd4af37, roughness: 0.2,  metalness: 1.0  },
-  jade:        { color: 0x4a8c6a, roughness: 0.5,  metalness: 0.1  },
-  pumpkin:     { color: 0xc05a00, roughness: 0.82, metalness: 0    },
-  oogie:       { color: 0xb89a60, roughness: 0.97, metalness: 0    },
-  sandworm:    { color: 0xd2be84, roughness: 0.99, metalness: 0    },
+  granite: {
+    color: 0xbab4ad,
+    roughness: 0.9,
+    metalness: 0.04,
+    envMapIntensity: 0.95,
+    clearcoat: 0.1,
+    clearcoatRoughness: 0.55,
+    bumpScale: 0.055,
+  },
+  concrete: {
+    color: 0xbeb9b3,
+    roughness: 0.82,
+    metalness: 0.03,
+    envMapIntensity: 0.65,
+    clearcoat: 0.04,
+    clearcoatRoughness: 0.75,
+    bumpScale: 0.048,
+  },
+  limestone: {
+    color: 0xe5dcc8,
+    roughness: 0.86,
+    metalness: 0.02,
+    envMapIntensity: 0.75,
+    clearcoat: 0.06,
+    clearcoatRoughness: 0.65,
+    bumpScale: 0.05,
+  },
+  marble: {
+    color: 0xf4f2ef,
+    roughness: 0.32,
+    metalness: 0.06,
+    envMapIntensity: 1.05,
+    clearcoat: 0.18,
+    clearcoatRoughness: 0.35,
+    bumpScale: 0.025,
+  },
+  steel: {
+    color: 0x8a9bab,
+    roughness: 0.22,
+    metalness: 0.88,
+    envMapIntensity: 1.15,
+    clearcoat: 0.35,
+    clearcoatRoughness: 0.28,
+    bumpScale: 0.015,
+  },
+  wood:        { color: 0x8b5e3c, roughness: 0.95, metalness: 0,    envMapIntensity: 0.45, clearcoat: 0.02, clearcoatRoughness: 0.9, bumpScale: 0.06 },
+  gold:        { color: 0xd4af37, roughness: 0.2,  metalness: 1.0, envMapIntensity: 1.2,  clearcoat: 0.15, clearcoatRoughness: 0.25, bumpScale: 0.01 },
+  jade:        { color: 0x4a8c6a, roughness: 0.5,  metalness: 0.1, envMapIntensity: 0.7,  clearcoat: 0.2,  clearcoatRoughness: 0.4,  bumpScale: 0.02 },
+  pumpkin:     { color: 0xc05a00, roughness: 0.82, metalness: 0,    envMapIntensity: 0.5,  clearcoat: 0.05, clearcoatRoughness: 0.85, bumpScale: 0.04 },
+  oogie:       { color: 0xb89a60, roughness: 0.97, metalness: 0,    envMapIntensity: 0.45, clearcoat: 0.02, clearcoatRoughness: 0.95, bumpScale: 0.05 },
+  sandworm:    { color: 0xd2be84, roughness: 0.99, metalness: 0,    envMapIntensity: 0.48, clearcoat: 0.02, clearcoatRoughness: 0.95, bumpScale: 0.05 },
   jack:        { mapFn: () => jackStripe('#080810', '#eceef8'),   roughness: 0.86, metalness: 0    },
   jacknight:   { mapFn: () => jackStripe('#05071a', '#90b8d8'),   roughness: 0.84, metalness: 0    },
   jackpurple:  { mapFn: () => jackStripe('#120820', '#c8a4e8'),   roughness: 0.85, metalness: 0    },
@@ -183,6 +256,12 @@ import '@fontsource/manrope/700.css';
 
 import { useStore } from './store/useStore';
 
+/** UV tile repeat for deck texture — increase if planks look oversized in world units */
+const FLOOR_DECK_MAP_REPEAT = 3;
+/** Brushed metal tiles along U more than V so horizontal grain reads at handrail UV scale */
+const HANDRAIL_METAL_REPEAT_U = 5;
+const HANDRAIL_METAL_REPEAT_V = 2;
+
 const ExpandMore = styled(IconButton, {
   shouldForwardProp: (prop) => prop !== 'expand',
 })(({ theme }) => ({
@@ -199,31 +278,85 @@ const ExpandMore = styled(IconButton, {
 // ─── BridgePartModel ────────────────────────────────────────────────────────
 // Loads one GLB and manages all per-model effects (highlight, opacity, material,
 // heatmap). Wrap in <Suspense> so variant switches don't blank the other parts.
-function BridgePartModel({ url, selected, opacity, materialId, heatmapActive }) {
+function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, deckColorMap, railColorMap, archWhiteGloss }) {
   const gltf = useLoader(GLTFLoader, url);
   const origMats = useRef(null);
+
+  const isPBR = (mat) => mat?.isMeshStandardMaterial || mat?.isMeshPhysicalMaterial;
 
   // Capture original material properties; inject a default material when missing or black
   useEffect(() => {
     const DEFAULT_MAT = new MeshStandardMaterial({ color: new Color(0.75, 0.75, 0.75), roughness: 0.7, metalness: 0.1 });
+    DEFAULT_MAT.bumpMap = BRIDGE_BUMP;
+    DEFAULT_MAT.bumpScale = 0.042;
+    DEFAULT_MAT.envMapIntensity = 1;
     const saved = [];
     gltf.scene.traverse((child) => {
       if (!child.isMesh) return;
       // Assign default material when none is present
       if (!child.material) child.material = DEFAULT_MAT.clone();
       const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach(mat => {
+      mats.forEach((mat) => {
+        if (deckColorMap && 'map' in mat) {
+          mat.map = deckColorMap;
+          if (mat.color) mat.color.setRGB(1, 1, 1);
+        } else if (railColorMap && 'map' in mat) {
+          mat.map = railColorMap;
+          if (mat.color) mat.color.setRGB(1, 1, 1);
+          if (isPBR(mat)) {
+            mat.metalness = 0.96;
+            mat.roughness = 0.34;
+            mat.envMapIntensity = 1.45;
+            mat.clearcoat = 0.16;
+            mat.clearcoatRoughness = 0.36;
+            mat.bumpMap = null;
+            mat.bumpScale = 0;
+          }
+        } else if (archWhiteGloss) {
+          if ('map' in mat) mat.map = null;
+          if (mat.color) mat.color.setRGB(0.98, 0.99, 1);
+          if (isPBR(mat)) {
+            mat.metalness = 0.11;
+            mat.roughness = 0.2;
+            mat.envMapIntensity = 1.38;
+            mat.clearcoat = 0.44;
+            mat.clearcoatRoughness = 0.22;
+            mat.bumpMap = null;
+            mat.bumpScale = 0;
+          }
+        }
         // Lighten meshes that came in with a pure-black color (no texture)
         if (!mat.map && mat.color && mat.color.r < 0.05 && mat.color.g < 0.05 && mat.color.b < 0.05) {
           mat.color.setRGB(0.75, 0.75, 0.75);
           mat.roughness = 0.7;
           mat.metalness = 0.1;
         }
-        saved.push({ mat, color: mat.color.clone(), roughness: mat.roughness, metalness: mat.metalness, map: mat.map ?? null });
+        if (isPBR(mat)) {
+          if (!mat.bumpMap && !railColorMap && !archWhiteGloss) {
+            mat.bumpMap = BRIDGE_BUMP;
+            mat.bumpScale = 0.042;
+          }
+          if (mat.envMapIntensity === undefined) mat.envMapIntensity = 1;
+          if (mat.clearcoat === undefined) mat.clearcoat = 0;
+          if (mat.clearcoatRoughness === undefined) mat.clearcoatRoughness = 0;
+        }
+        saved.push({
+          mat,
+          color: mat.color.clone(),
+          roughness: mat.roughness,
+          metalness: mat.metalness,
+          map: mat.map ?? null,
+          pbr: isPBR(mat),
+          bumpMap: isPBR(mat) ? mat.bumpMap : null,
+          bumpScale: isPBR(mat) ? mat.bumpScale : 1,
+          envMapIntensity: isPBR(mat) ? (mat.envMapIntensity ?? 1) : 1,
+          clearcoat: isPBR(mat) ? (mat.clearcoat ?? 0) : 0,
+          clearcoatRoughness: isPBR(mat) ? (mat.clearcoatRoughness ?? 0) : 0,
+        });
       });
     });
     origMats.current = saved;
-  }, [gltf.scene]);
+  }, [gltf.scene, deckColorMap, railColorMap, archWhiteGloss]);
 
   // Emissive highlight for selected part
   useEffect(() => {
@@ -308,21 +441,149 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive }) 
   useEffect(() => {
     if (heatmapActive || !origMats.current) return;
     const preset = PRESETS[materialId] ?? null;
-    origMats.current.forEach(({ mat, color, roughness, metalness, map }) => {
+    origMats.current.forEach((entry) => {
+      const {
+        mat, color, roughness, metalness, map, pbr,
+        bumpMap: savedBump, bumpScale: savedBumpScale,
+        envMapIntensity: savedEnv, clearcoat: savedCc, clearcoatRoughness: savedCcr,
+      } = entry;
+
+      const applyPBRMaps = (bump, bumpScale, envI, cc, ccr) => {
+        if (!pbr || !isPBR(mat)) return;
+        mat.bumpMap = bump;
+        mat.bumpScale = bumpScale ?? 1;
+        mat.envMapIntensity = envI ?? 1;
+        mat.clearcoat = cc ?? 0;
+        mat.clearcoatRoughness = ccr ?? 0;
+      };
+
       if (preset === null) {
-        mat.color.copy(color); mat.roughness = roughness; mat.metalness = metalness; mat.map = map;
+        mat.color.copy(color);
+        mat.roughness = roughness;
+        mat.metalness = metalness;
+        mat.map = map;
+        applyPBRMaps(savedBump, savedBumpScale, savedEnv, savedCc, savedCcr);
       } else if (preset.mapFn) {
-        mat.map = preset.mapFn(); mat.color.setHex(0xffffff);
-        mat.roughness = preset.roughness; mat.metalness = preset.metalness;
+        mat.map = preset.mapFn();
+        mat.color.setHex(0xffffff);
+        mat.roughness = preset.roughness;
+        mat.metalness = preset.metalness;
+        applyPBRMaps(null, 1, 0.55, 0, 0);
       } else {
-        mat.map = null; mat.color.setHex(preset.color);
-        mat.roughness = preset.roughness; mat.metalness = preset.metalness;
+        if (deckColorMap) mat.map = deckColorMap;
+        else if (railColorMap) mat.map = railColorMap;
+        else mat.map = null;
+        if (archWhiteGloss) {
+          mat.map = null;
+          mat.color.setHex(0xffffff);
+          mat.roughness = Math.min(preset.roughness, 0.24);
+          mat.metalness = 0.11;
+          applyPBRMaps(
+            null,
+            0,
+            Math.max(preset.envMapIntensity ?? 1, 1.32),
+            Math.max(preset.clearcoat ?? 0, 0.38),
+            Math.min(preset.clearcoatRoughness ?? 0.32, 0.28),
+          );
+        } else {
+          mat.color.setHex(preset.color);
+          let r = preset.roughness;
+          let m = preset.metalness;
+          if (railColorMap) {
+            m = Math.max(m, 0.92);
+            r = Math.min(r, 0.4);
+          }
+          mat.roughness = r;
+          mat.metalness = m;
+          const railShine = !!railColorMap;
+          applyPBRMaps(
+            railShine ? null : BRIDGE_BUMP,
+            railShine ? 0 : (preset.bumpScale ?? 0.045),
+            railShine ? Math.max(preset.envMapIntensity ?? 1, 1.38) : (preset.envMapIntensity ?? 1),
+            railShine ? Math.max(preset.clearcoat ?? 0, 0.12) : (preset.clearcoat ?? 0),
+            railShine ? 0.4 : (preset.clearcoatRoughness ?? 0),
+          );
+        }
       }
       mat.needsUpdate = true;
     });
-  }, [materialId, heatmapActive, gltf.scene]);
+  }, [materialId, heatmapActive, gltf.scene, deckColorMap, railColorMap, archWhiteGloss]);
 
   return <primitive object={gltf.scene} />;
+}
+
+/** Loads shared concrete albedo once, applies to every floor GLB (step 9 at runtime vs. Blender bake). */
+function FloorPartsWithDeckTexture({ floorUrls, selected, opacity, materialId, heatmapActive }) {
+  const deckMap = useTexture(concreteAlbedoUrl);
+  useLayoutEffect(() => {
+    deckMap.wrapS = deckMap.wrapT = RepeatWrapping;
+    deckMap.repeat.set(FLOOR_DECK_MAP_REPEAT, FLOOR_DECK_MAP_REPEAT);
+    deckMap.flipY = false;
+    deckMap.needsUpdate = true;
+  }, [deckMap]);
+  return (
+    <>
+      {floorUrls.map((url) => (
+        <Suspense key={url} fallback={null}>
+          <BridgePartModel
+            url={url}
+            selected={selected}
+            opacity={opacity}
+            materialId={materialId}
+            heatmapActive={heatmapActive}
+            deckColorMap={deckMap}
+          />
+        </Suspense>
+      ))}
+    </>
+  );
+}
+
+/** Brushed stainless albedo + high metalness / env reflections for all handrail GLBs */
+/** Bright white arch / structure: no albedo map, high env + clearcoat for a reflective enamel look */
+function ArchPartsWhiteGloss({ archUrls, selected, opacity, materialId, heatmapActive }) {
+  return (
+    <>
+      {archUrls.map((url) => (
+        <Suspense key={url} fallback={null}>
+          <BridgePartModel
+            url={url}
+            selected={selected}
+            opacity={opacity}
+            materialId={materialId}
+            heatmapActive={heatmapActive}
+            archWhiteGloss
+          />
+        </Suspense>
+      ))}
+    </>
+  );
+}
+
+function HandrailPartsWithMetalTexture({ handrailUrls, selected, opacity, materialId, heatmapActive }) {
+  const metalMap = useTexture(metalAlbedoUrl);
+  useLayoutEffect(() => {
+    metalMap.wrapS = metalMap.wrapT = RepeatWrapping;
+    metalMap.repeat.set(HANDRAIL_METAL_REPEAT_U, HANDRAIL_METAL_REPEAT_V);
+    metalMap.flipY = false;
+    metalMap.needsUpdate = true;
+  }, [metalMap]);
+  return (
+    <>
+      {handrailUrls.map((url) => (
+        <Suspense key={url} fallback={null}>
+          <BridgePartModel
+            url={url}
+            selected={selected}
+            opacity={opacity}
+            materialId={materialId}
+            heatmapActive={heatmapActive}
+            railColorMap={metalMap}
+          />
+        </Suspense>
+      ))}
+    </>
+  );
 }
 
 // ─── Scene ──────────────────────────────────────────────────────────────────
@@ -359,6 +620,12 @@ export default function Scene() {
   const { gl, camera, scene, get } = useThree();
   useEffect(() => { setGl(gl); }, [gl]);
 
+  useEffect(() => {
+    gl.outputColorSpace = SRGBColorSpace;
+    gl.toneMapping = ACESFilmicToneMapping;
+    gl.toneMappingExposure = 1.02;
+  }, [gl]);
+
   const cameraRef      = useRef();
   const controlsRef    = useRef();
   const dirLightRef    = useRef();
@@ -392,9 +659,9 @@ export default function Scene() {
   // Lighting mode: adjust light color/intensity per mode
   useEffect(() => {
     const LIGHTING = {
-      day:   { dirColor: 0xffffff, dirIntensity: 1.5, ambColor: 0xffffff, ambIntensity: 0.5 },
-      dusk:  { dirColor: 0xff8844, dirIntensity: 1.1, ambColor: 0xff6633, ambIntensity: 0.35 },
-      night: { dirColor: 0x4466aa, dirIntensity: 0.4, ambColor: 0x223366, ambIntensity: 0.2 },
+      day:   { dirColor: 0xffffff, dirIntensity: 1.32, ambColor: 0xffffff, ambIntensity: 0.34 },
+      dusk:  { dirColor: 0xff8844, dirIntensity: 1.05, ambColor: 0xff6633, ambIntensity: 0.3 },
+      night: { dirColor: 0x4466aa, dirIntensity: 0.38, ambColor: 0x223366, ambIntensity: 0.18 },
     };
     const cfg = LIGHTING[lightingMode] || LIGHTING.day;
     if (dirLightRef.current) {
@@ -575,24 +842,26 @@ export default function Scene() {
         onStart={() => { setCameraTarget(null); userOrbitedRef.current = true; }}
       />
 
-      <directionalLight ref={dirLightRef} position={[1, 1, 1]} intensity={1.5} />
-      <ambientLight ref={ambLightRef} intensity={0.5} />
+      <Suspense fallback={null}>
+        <Environment preset="city" environmentIntensity={0.4} />
+      </Suspense>
+      <hemisphereLight args={[0xc8dae8, 0x1e1c1a, 0.22]} />
+      <directionalLight ref={dirLightRef} castShadow={false} position={[14, 22, 10]} intensity={1.32} />
+      <ambientLight ref={ambLightRef} intensity={0.34} />
 
       {/* Floor / base layer — all segments rendered together */}
       {(showBase || (timelineStep !== null && timelineStep >= 1)) && (
         <group position={MODEL_OFFSET} onPointerDown={handlePointerDown} onClick={handlePartClick('base')}>
           <group ref={floorAssembleRef}>
-            {_floorUrls.map((url) => (
-              <Suspense key={url} fallback={null}>
-                <BridgePartModel
-                  url={url}
-                  selected={selectedPart === 'base'}
-                  opacity={effectiveFloorOpacity}
-                  materialId={baseMaterial}
-                  heatmapActive={heatmapActive}
-                />
-              </Suspense>
-            ))}
+            <Suspense fallback={null}>
+              <FloorPartsWithDeckTexture
+                floorUrls={_floorUrls}
+                selected={selectedPart === 'base'}
+                opacity={effectiveFloorOpacity}
+                materialId={baseMaterial}
+                heatmapActive={heatmapActive}
+              />
+            </Suspense>
           </group>
         </group>
       )}
@@ -606,17 +875,15 @@ export default function Scene() {
             onPointerDown={handlePointerDown}
             onClick={handlePartClick('structure')}
           >
-            {_archUrls.map((url) => (
-              <Suspense key={url} fallback={null}>
-                <BridgePartModel
-                  url={url}
-                  selected={selectedPart === 'structure'}
-                  opacity={effectiveArchOpacity}
-                  materialId={structureMaterial}
-                  heatmapActive={heatmapActive}
-                />
-              </Suspense>
-            ))}
+            <Suspense fallback={null}>
+              <ArchPartsWhiteGloss
+                archUrls={_archUrls}
+                selected={selectedPart === 'structure'}
+                opacity={effectiveArchOpacity}
+                materialId={structureMaterial}
+                heatmapActive={heatmapActive}
+              />
+            </Suspense>
           </group>
         </group>
       )}
@@ -625,17 +892,15 @@ export default function Scene() {
       {(showHandrail || (timelineStep !== null && timelineStep >= 3)) && (
         <group position={MODEL_OFFSET} onPointerDown={handlePointerDown} onClick={handlePartClick('handrail')}>
           <group ref={handrailAssembleRef}>
-            {_handrailUrls.map((url) => (
-              <Suspense key={url} fallback={null}>
-                <BridgePartModel
-                  url={url}
-                  selected={selectedPart === 'handrail'}
-                  opacity={effectiveHandrailOpacity}
-                  materialId={handrailMaterial}
-                  heatmapActive={heatmapActive}
-                />
-              </Suspense>
-            ))}
+            <Suspense fallback={null}>
+              <HandrailPartsWithMetalTexture
+                handrailUrls={_handrailUrls}
+                selected={selectedPart === 'handrail'}
+                opacity={effectiveHandrailOpacity}
+                materialId={handrailMaterial}
+                heatmapActive={heatmapActive}
+              />
+            </Suspense>
           </group>
         </group>
       )}
