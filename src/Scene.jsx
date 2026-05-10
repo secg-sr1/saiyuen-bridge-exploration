@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, Suspense } from 'react';
 import { useLoader, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Html, useProgress, Environment, useTexture } from '@react-three/drei';
 import { setGl } from './utils/screenshot';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { QueuedGLTFLoader } from './utils/QueuedGLTFLoader';
 import {
   CanvasTexture,
   RepeatWrapping,
@@ -282,7 +282,7 @@ const ExpandMore = styled(IconButton, {
 // Loads one GLB and manages all per-model effects (highlight, opacity, material,
 // heatmap). Wrap in <Suspense> so variant switches don't blank the other parts.
 function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, deckColorMap, railColorMap, archWhiteGloss }) {
-  const gltf = useLoader(GLTFLoader, url);
+  const gltf = useLoader(QueuedGLTFLoader, url);
   const origMats = useRef(null);
 
   const isPBR = (mat) => mat?.isMeshStandardMaterial || mat?.isMeshPhysicalMaterial;

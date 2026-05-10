@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     topLevelAwait(),
   ],
-  // base: '/saiyuen-alpha/',
-  base: '/',
+  // Relative asset URLs — works on GitHub Pages project sites and nested paths without guessing repo name.
+  base: './',
   assetsInclude: ['**/*.glb'],
 })
