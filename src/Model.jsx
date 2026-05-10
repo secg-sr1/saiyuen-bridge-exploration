@@ -1,7 +1,8 @@
 /* eslint-disable react/prop-types */
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import Scene from './Scene.jsx';
+import { Loader } from '@react-three/drei';
+import Scene, { FLOOR_COUNT, STRUCTURE_COUNT, HANDRAIL_COUNT } from './Scene.jsx';
 import {
   Alert,
   Accordion,
@@ -14,7 +15,6 @@ import {
   CardActions,
   Checkbox,
   Chip,
-  CircularProgress,
   CssBaseline,
   Fab,
   FormControlLabel,
@@ -77,29 +77,6 @@ const SLIDE_IMAGES = [
   'https://github.com/secg-sr1/saiyuen-alpha/blob/main/public/brige-01-render-01.png?raw=true',
   'https://github.com/secg-sr1/saiyuen-alpha/blob/main/public/bridge-02-00.png?raw=true',
 ];
-
-function LoadingOverlay({ label }) {
-  return (
-    <Box sx={{
-      position: 'fixed', inset: 0,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      bgcolor: C.surface, gap: 3, zIndex: 99999,
-    }}>
-      {/* Red accent line at top */}
-      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, bgcolor: C.primaryDeep }} />
-      <CircularProgress sx={{ color: C.primaryDeep }} size={32} thickness={2} />
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-        <Typography sx={{
-          color: C.onSurfaceDim, fontFamily: FONT_LABEL, fontWeight: 500,
-          fontSize: 'clamp(10px, 2vw, 12px)', letterSpacing: '0.2em', textTransform: 'uppercase',
-        }}>
-          {label}
-        </Typography>
-        <Box sx={{ width: 120, height: 1, bgcolor: C.outline }} />
-      </Box>
-    </Box>
-  );
-}
 
 export default function Model() {
   const showBase = useStore(state => state.showBase);
@@ -310,24 +287,41 @@ export default function Model() {
             pointerEvents: 'auto',
           }}
         >
-          <Suspense fallback={<LoadingOverlay label={text.model.cameraLoading} />}>
-            <Canvas
-              gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
-              style={{
-                width: '100%',
-                height: '100%',
-                display: 'block',
-                touchAction: 'none',
-              }}
-              onCreated={({ gl, scene }) => {
-                gl.setClearColor(0x000000, 0);
-                scene.background = null;
-              }}
-              onPointerMissed={() => setSelectedPart(null)}
-            >
+          {/* drei's Loader renders DOM (div/span). It must NOT be inside <Canvas> — R3F only accepts THREE nodes there. */}
+          <Canvas
+            gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              touchAction: 'none',
+            }}
+            onCreated={({ gl, scene }) => {
+              gl.setClearColor(0x000000, 0);
+              scene.background = null;
+            }}
+            onPointerMissed={() => setSelectedPart(null)}
+          >
+            <Suspense fallback={null}>
               <Scene />
-            </Canvas>
-          </Suspense>
+            </Suspense>
+          </Canvas>
+          <Loader
+            containerStyles={{
+              background: 'rgba(19, 19, 19, 0.72)',
+              backdropFilter: 'blur(8px)',
+            }}
+            innerStyles={{ width: 140, height: 3 }}
+            barStyles={{ background: C.primaryDeep, height: 3 }}
+            dataStyles={{
+              color: C.onSurfaceDim,
+              fontFamily: FONT_LABEL,
+              fontSize: 11,
+              letterSpacing: '0.14em',
+              marginTop: 12,
+            }}
+            dataInterpolation={(p) => `${text.model.cameraLoading} ${p.toFixed(0)}%`}
+          />
         </Box>
       </Box>
 
@@ -803,9 +797,9 @@ export default function Model() {
               </Box>
 
               {[
-                { label: 'FLOOR',    count: 13, value: selectedFloor,    onChange: setSelectedFloor },
-                { label: 'ARCH',     count: 48, value: selectedArch,     onChange: setSelectedArch },
-                { label: 'HANDRAIL', count: 80, value: selectedHandrail, onChange: setSelectedHandrail },
+                { label: 'FLOOR',    count: FLOOR_COUNT,    value: selectedFloor,    onChange: setSelectedFloor },
+                { label: 'STICKS',   count: STRUCTURE_COUNT, value: selectedArch,     onChange: setSelectedArch },
+                { label: 'HANDRAIL', count: HANDRAIL_COUNT, value: selectedHandrail, onChange: setSelectedHandrail },
               ].map(({ label, count, value, onChange }) => (
                 <Box key={label} sx={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',

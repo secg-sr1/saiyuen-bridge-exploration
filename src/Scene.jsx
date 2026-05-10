@@ -167,18 +167,21 @@ const PRESETS = {
 };
 
 // GLB URL arrays — sorted alphabetically so index 0 = _01, index 1 = _02, etc.
-const _floorGlob   = import.meta.glob('./assets/glb-models/floor/*.glb',    { eager: true, query: '?url', import: 'default' });
-const _archGlob    = import.meta.glob('./assets/glb-models/arch/*.glb',     { eager: true, query: '?url', import: 'default' });
+const _floorGlob    = import.meta.glob('./assets/glb-models/floor/*.glb',    { eager: true, query: '?url', import: 'default' });
 const _handrailGlob = import.meta.glob('./assets/glb-models/handrail/*.glb', { eager: true, query: '?url', import: 'default' });
+// Match root-level and nested `.glb` files under `sticks/` (Vite glob is relative to this file).
+const _sticksGlob   = import.meta.glob('./assets/glb-models/sticks/**/*.glb', { eager: true, query: '?url', import: 'default' });
 
 const _floorUrls    = Object.entries(_floorGlob).sort(([a],[b])=>a.localeCompare(b)).map(([,u])=>u);
-const _archUrls     = Object.entries(_archGlob).sort(([a],[b])=>a.localeCompare(b)).map(([,u])=>u);
 const _handrailUrls = Object.entries(_handrailGlob).sort(([a],[b])=>a.localeCompare(b)).map(([,u])=>u);
+const _sticksUrls   = Object.entries(_sticksGlob).sort(([a],[b])=>a.localeCompare(b)).map(([,u])=>u);
+/** Structure layer (white gloss): `sticks/` GLBs — current asset layout has floor/, handrail/, sticks/. */
+const _structureUrls = _sticksUrls;
 
 // Export so Model.jsx can show counts in the UI without re-importing globs
-export const FLOOR_COUNT    = _floorUrls.length;
-export const ARCH_COUNT     = _archUrls.length;
-export const HANDRAIL_COUNT = _handrailUrls.length;
+export const FLOOR_COUNT     = _floorUrls.length;
+export const STRUCTURE_COUNT = _structureUrls.length;
+export const HANDRAIL_COUNT  = _handrailUrls.length;
 
 // World-space offset that brings the models (whose GLB origin is at ~x=-25)
 // to the scene origin so the camera can see them at default position.
@@ -540,11 +543,11 @@ function FloorPartsWithDeckTexture({ floorUrls, selected, opacity, materialId, h
 }
 
 /** Brushed stainless albedo + high metalness / env reflections for all handrail GLBs */
-/** Bright white arch / structure: no albedo map, high env + clearcoat for a reflective enamel look */
-function ArchPartsWhiteGloss({ archUrls, selected, opacity, materialId, heatmapActive }) {
+/** Bright white structure: no albedo map, high env + clearcoat for a reflective enamel look */
+function StructurePartsWhiteGloss({ structureUrls, selected, opacity, materialId, heatmapActive }) {
   return (
     <>
-      {archUrls.map((url) => (
+      {structureUrls.map((url) => (
         <Suspense key={url} fallback={null}>
           <BridgePartModel
             url={url}
@@ -876,8 +879,8 @@ export default function Scene() {
             onClick={handlePartClick('structure')}
           >
             <Suspense fallback={null}>
-              <ArchPartsWhiteGloss
-                archUrls={_archUrls}
+              <StructurePartsWhiteGloss
+                structureUrls={_structureUrls}
                 selected={selectedPart === 'structure'}
                 opacity={effectiveArchOpacity}
                 materialId={structureMaterial}
