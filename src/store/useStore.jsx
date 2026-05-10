@@ -12,7 +12,7 @@ export let useStore = create((set) => ({
   showBase: true,
   setShowBase: (showbase) => set({ showBase: showbase }),
 
-  // Structure layer loads `sticks/*.glb`. Toggle off in the UI to skip downloading the heavy sticks asset.
+  // Structure layer loads `sticks/sticks_combined.glb` when present, otherwise every segment under `sticks/`. Toggle off to skip.
   showStructure: true,
   setShowStructure: (showstructure) => set({ showStructure: showstructure }),
 

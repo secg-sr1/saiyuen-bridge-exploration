@@ -169,14 +169,20 @@ const PRESETS = {
 // GLB URL arrays — sorted alphabetically so index 0 = _01, index 1 = _02, etc.
 const _floorGlob    = import.meta.glob('./assets/glb-models/floor/*.glb',    { eager: true, query: '?url', import: 'default' });
 const _handrailGlob = import.meta.glob('./assets/glb-models/handrail/*.glb', { eager: true, query: '?url', import: 'default' });
-// Match root-level and nested `.glb` files under `sticks/` (Vite glob is relative to this file).
+// Optional: one merged mesh — avoids hundreds of HTTP requests for each stick segment (export from Blender to this path).
+const _sticksCombinedGlob = import.meta.glob('./assets/glb-models/sticks/sticks_combined.glb', { eager: true, query: '?url', import: 'default' });
+// Per-segment GLBs under `sticks/` (used only when `sticks_combined.glb` is absent).
 const _sticksGlob   = import.meta.glob('./assets/glb-models/sticks/**/*.glb', { eager: true, query: '?url', import: 'default' });
 
 const _floorUrls    = Object.entries(_floorGlob).sort(([a],[b])=>a.localeCompare(b)).map(([,u])=>u);
 const _handrailUrls = Object.entries(_handrailGlob).sort(([a],[b])=>a.localeCompare(b)).map(([,u])=>u);
-const _sticksUrls   = Object.entries(_sticksGlob).sort(([a],[b])=>a.localeCompare(b)).map(([,u])=>u);
-/** Structure layer (white gloss): `sticks/` GLBs — current asset layout has floor/, handrail/, sticks/. */
-const _structureUrls = _sticksUrls;
+const _sticksCombinedUrls = Object.entries(_sticksCombinedGlob).sort(([a],[b])=>a.localeCompare(b)).map(([,u])=>u);
+const _sticksSegmentUrls = Object.entries(_sticksGlob)
+  .filter(([path]) => !path.includes('sticks_combined'))
+  .sort(([a],[b])=>a.localeCompare(b))
+  .map(([,u])=>u);
+// Structure layer: prefer sticks/sticks_combined.glb if present; else load each segment GLB under sticks/.
+const _structureUrls = _sticksCombinedUrls.length > 0 ? _sticksCombinedUrls : _sticksSegmentUrls;
 
 // Export so Model.jsx can show counts in the UI without re-importing globs
 export const FLOOR_COUNT     = _floorUrls.length;
