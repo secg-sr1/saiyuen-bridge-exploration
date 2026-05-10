@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     topLevelAwait(),
   ],
-  // Relative asset URLs — works on GitHub Pages project sites and nested paths without guessing repo name.
-  base: './',
+  // Vercel / Netlify / root domains: '/'. GitHub Pages project site: set VITE_BASE=/repo-name/ when building.
+  base: process.env.VITE_BASE ?? '/',
   assetsInclude: ['**/*.glb'],
 })

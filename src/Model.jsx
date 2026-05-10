@@ -72,10 +72,11 @@ const theme = createTheme({
   typography: { fontFamily: FONT_HEAD },
 });
 
+// raw.githubusercontent.com serves bytes reliably; github.com/blob/... often returns HTML on mobile (broken <img>).
 const SLIDE_IMAGES = [
-  'https://github.com/secg-sr1/saiyuen-alpha/blob/main/public/brige-01-render-00.png?raw=true',
-  'https://github.com/secg-sr1/saiyuen-alpha/blob/main/public/brige-01-render-01.png?raw=true',
-  'https://github.com/secg-sr1/saiyuen-alpha/blob/main/public/bridge-02-00.png?raw=true',
+  'https://raw.githubusercontent.com/secg-sr1/saiyuen-alpha/main/public/brige-01-render-00.png',
+  'https://raw.githubusercontent.com/secg-sr1/saiyuen-alpha/main/public/brige-01-render-01.png',
+  'https://raw.githubusercontent.com/secg-sr1/saiyuen-alpha/main/public/bridge-02-00.png',
 ];
 
 export default function Model() {
@@ -289,6 +290,7 @@ export default function Model() {
         >
           {/* drei's Loader renders DOM (div/span). It must NOT be inside <Canvas> — R3F only accepts THREE nodes there. */}
           <Canvas
+            dpr={[1, 2]}
             gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
             style={{
               width: '100%',
