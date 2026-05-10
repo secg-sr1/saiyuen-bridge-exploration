@@ -1,4 +1,5 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { MeshoptDecoder } from 'meshoptimizer';
 
 /** Cap parallel GLB fetches/decodes — many segments × parallel tabs saturates slow CDNs and mobile CPUs. */
 const MAX_CONCURRENT = 6;
@@ -49,6 +50,11 @@ function loadWithQueue(loader, url, onProgress) {
  * so the bridge’s many segment files do not all compete at once on constrained networks.
  */
 export class QueuedGLTFLoader extends GLTFLoader {
+  constructor(manager) {
+    super(manager);
+    this.setMeshoptDecoder(MeshoptDecoder);
+  }
+
   load(url, onLoad, onProgress, onError) {
     loadWithQueue(this, url, onProgress).then(onLoad).catch(onError);
     return undefined;
