@@ -74,9 +74,9 @@ const theme = createTheme({
 
 // raw.githubusercontent.com serves bytes reliably; github.com/blob/... often returns HTML on mobile (broken <img>).
 const SLIDE_IMAGES = [
-  'https://raw.githubusercontent.com/secg-sr1/saiyuen-alpha/main/public/brige-01-render-00.png',
-  'https://raw.githubusercontent.com/secg-sr1/saiyuen-alpha/main/public/brige-01-render-01.png',
-  'https://raw.githubusercontent.com/secg-sr1/saiyuen-alpha/main/public/bridge-02-00.png',
+  '/bridge-v2-00.png',
+  '/bridge-v2-01.png',
+  '/bridge-v2-02.png',
 ];
 
 export default function Model() {
@@ -471,11 +471,11 @@ export default function Model() {
       {/* Editorial info panel */}
       {showAccordion && (
         <>
-          {/* Dim backdrop on desktop */}
+          {/* Dim backdrop */}
           <Box
             onClick={() => setShowAccordion(false)}
             sx={{
-              display: { xs: 'none', sm: 'block' },
+              display: 'block',
               position: 'fixed', inset: 0, zIndex: 9998,
               bgcolor: 'rgba(0,0,0,0.35)',
               animation: 'fadeIn 0.2s ease',
@@ -485,13 +485,14 @@ export default function Model() {
 
           <Box sx={{
             position: 'fixed',
-            top: 0,
+            top: { xs: 'auto', sm: 0 },
             right: 0,
             bottom: 0,
             width: { xs: '100%', sm: '400px', md: '420px' },
-            bgcolor: 'rgba(246,244,241,0.88)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
+            maxHeight: { xs: '46vh', sm: '100%' },
+            bgcolor: 'rgba(246,244,241,0.58)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
             color: '#111111',
             zIndex: 9999,
             overflowY: 'auto',
@@ -500,15 +501,30 @@ export default function Model() {
             flexDirection: 'column',
             fontFamily: FONT_HEAD,
             borderLeft: { xs: 'none', sm: '1px solid #E2DFDB' },
-            animation: 'slideInRight 0.24s ease-out',
+            borderTop: { xs: '1px solid #E2DFDB', sm: 'none' },
+            animation: { xs: 'slideInBottom 0.28s ease-out', sm: 'slideInRight 0.24s ease-out' },
             '@keyframes slideInRight': {
               from: { opacity: 0, transform: 'translateX(24px)' },
               to:   { opacity: 1, transform: 'translateX(0)' },
+            },
+            '@keyframes slideInBottom': {
+              from: { opacity: 0, transform: 'translateY(24px)' },
+              to:   { opacity: 1, transform: 'translateY(0)' },
             },
             '&::-webkit-scrollbar': { width: '3px' },
             '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
             '&::-webkit-scrollbar-thumb': { bgcolor: '#D0CEC9' },
           }}>
+
+            {/* Mobile drag handle */}
+            <Box sx={{
+              display: { xs: 'flex', sm: 'none' },
+              justifyContent: 'center',
+              pt: 1.25, pb: 0.25,
+              flexShrink: 0,
+            }}>
+              <Box sx={{ width: 28, height: 2, bgcolor: '#E2DFDB' }} />
+            </Box>
 
             {/* ── Nav header ── */}
             <Box sx={{
@@ -536,7 +552,7 @@ export default function Model() {
                   onClick={() => setShowAccordion(false)}
                   sx={{
                     fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11,
-                    letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999',
+                    letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2b2b2b',
                     cursor: 'pointer', transition: 'color 0.15s',
                     '&:hover': { color: '#111' },
                   }}

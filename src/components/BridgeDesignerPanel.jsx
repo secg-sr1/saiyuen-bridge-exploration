@@ -33,7 +33,7 @@ import { track } from '../utils/analytics';
 
 const C = {
   bg:          '#F6F4F1',
-  surface:     '#FFFFFF',
+  surface:     'rgba(255,255,255,0.45)',
   border:      '#E2DFDB',
   borderLight: '#EEECE8',
   ink:         '#111111',
@@ -349,9 +349,9 @@ export default function BridgeDesignerPanel() {
         <Box sx={{
           position: 'fixed', bottom: 68, left: '50%', transform: 'translateX(-50%)',
           zIndex: 9997,
-          bgcolor: 'rgba(246,244,241,0.88)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
+          bgcolor: 'rgba(246,244,241,0.58)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
           border: `1px solid ${C.border}`,
           ...sharp,
           px: 1.5, py: 0.75,
@@ -430,16 +430,17 @@ export default function BridgeDesignerPanel() {
         left: { xs: 0, sm: '50%' },
         transform: { xs: 'none', sm: 'translateX(-50%)' },
         width: { xs: '100%', sm: 'min(94vw, 860px)' },
-        maxHeight: { xs: '72vh', sm: 'none' },
+        maxHeight: { xs: '46vh', sm: 'none' },
         zIndex: 9998,
         display: 'flex', flexDirection: 'column',
       }}>
       <Box sx={{
         flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         ...sharp,
-        bgcolor: 'rgba(246,244,241,0.88)',
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
+        bgcolor: 'rgba(246,244,241,0.58)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        color: C.ink,
         border: `1px solid ${C.border}`,
         boxShadow: '0 8px 40px rgba(0,0,0,0.14)',
         animation: 'panelSlide 0.22s ease-out',
@@ -449,14 +450,24 @@ export default function BridgeDesignerPanel() {
         },
       }}>
 
+        {/* Mobile drag handle */}
+        <Box sx={{
+          display: { xs: 'flex', sm: 'none' },
+          justifyContent: 'center',
+          pt: 1.25, pb: 0.25,
+          flexShrink: 0,
+        }}>
+          <Box sx={{ width: 28, height: 2, bgcolor: C.border }} />
+        </Box>
+
         {/* Header */}
         <Box sx={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           px: 3, py: 2,
           borderBottom: `1px solid ${C.border}`,
+          flexShrink: 0,
         }}>
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <AutoAwesomeIcon sx={{ color: C.inkMuted, fontSize: 14 }} />
+          <Stack direction="row" alignItems="center" spacing={2}>
             <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 800, fontSize: 12,
               color: C.ink, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               {text.designer.title}
@@ -478,7 +489,7 @@ export default function BridgeDesignerPanel() {
             sx={{
               fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11,
               letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: C.inkMuted, cursor: 'pointer', transition: 'color 0.15s',
+              color: '#2b2b2b', cursor: 'pointer', transition: 'color 0.15s',
               '&:hover': { color: C.ink },
             }}
           >
@@ -510,7 +521,7 @@ export default function BridgeDesignerPanel() {
                     color: C.ink, mb: 0.25, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                     {captureSource === 'ar' ? text.designer.usingArCapture : text.designer.usingPhoto}
                   </Typography>
-                  <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 12, color: C.inkMuted, lineHeight: 1.6 }}>
+                  <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11, color: C.inkMuted, lineHeight: 1.6 }}>
                     {text.designer.usingPhotoBody}
                   </Typography>
                 </Box>
@@ -528,17 +539,17 @@ export default function BridgeDesignerPanel() {
                   onClick={() => fileInputRef.current?.click()}
                   sx={{
                     p: 1.5, cursor: 'pointer',
-                    border: `1px dashed ${C.border}`, bgcolor: C.surface,
+                    border: `1px solid ${C.border}`, bgcolor: C.surface,
                     transition: 'border-color 0.15s',
-                    '&:hover': { borderColor: C.inkMuted },
+                    '&:hover': { borderColor: C.ink },
                   }}>
                   <AddPhotoAlternateOutlinedIcon sx={{ color: C.inkFaint, fontSize: 18, flexShrink: 0 }} />
                   <Box>
                     <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 600, fontSize: 11,
-                      color: C.inkSub, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      color: C.inkSub, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                       {text.designer.uploadPhoto}
                     </Typography>
-                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11, color: C.inkFaint }}>
+                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11, color: C.inkFaint, mt: 0.25 }}>
                       {text.designer.uploadPhotoBody}
                     </Typography>
                   </Box>
@@ -547,18 +558,18 @@ export default function BridgeDesignerPanel() {
                   onClick={handleCaptureAR}
                   sx={{
                     p: 1.5, cursor: 'pointer',
-                    border: `1px dashed ${C.border}`, bgcolor: C.surface,
+                    border: `1px solid ${C.border}`, bgcolor: C.surface,
                     opacity: cameraFeedAvailable ? 1 : 0.5,
                     transition: 'border-color 0.15s',
-                    '&:hover': { borderColor: C.inkMuted },
+                    '&:hover': { borderColor: cameraFeedAvailable ? C.ink : C.border },
                   }}>
                   <CameraAltOutlinedIcon sx={{ color: C.inkFaint, fontSize: 18, flexShrink: 0 }} />
                   <Box>
                     <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 600, fontSize: 11,
-                      color: C.inkSub, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      color: C.inkSub, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                       {text.designer.captureArView}
                     </Typography>
-                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11, color: C.inkFaint }}>
+                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11, color: C.inkFaint, mt: 0.25 }}>
                       {cameraFeedAvailable ? text.designer.captureArViewBody : text.designer.captureArUnavailable}
                     </Typography>
                   </Box>
@@ -567,79 +578,83 @@ export default function BridgeDesignerPanel() {
             )}
 
             {/* Style */}
-            <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
-              color: C.inkFaint, letterSpacing: '0.12em', textTransform: 'uppercase', mb: 1 }}>
-              {text.designer.styleLabel}
-            </Typography>
-            <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 2 }}>
-              {DESIGN_STYLES.map(s => {
-                const on = pendingStyles.includes(s.id);
-                return (
-                  <Box
-                    key={s.id}
-                    onClick={() => toggleStyle(s.id)}
-                    sx={{
-                      px: 1.5, py: 0.6, cursor: 'pointer',
-                      bgcolor: on ? C.ink : C.surface,
-                      color: on ? '#fff' : C.inkSub,
-                      border: `1px solid ${on ? C.ink : C.border}`,
-                      transition: 'background-color 0.15s, color 0.15s, border-color 0.15s',
-                      '&:hover': { borderColor: C.ink, color: on ? '#fff' : C.ink },
-                    }}
-                  >
-                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: on ? 700 : 400, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                      {text.designer.styleLabels?.[s.id] ?? s.label}
-                    </Typography>
-                  </Box>
-                );
-              })}
-            </Stack>
+            <Box sx={{ borderTop: `1px solid ${C.borderLight}`, pt: 2, mb: 1.25 }}>
+              <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
+                color: C.inkFaint, letterSpacing: '0.12em', textTransform: 'uppercase', mb: 1.25 }}>
+                {text.designer.styleLabel}
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                {DESIGN_STYLES.map(s => {
+                  const on = pendingStyles.includes(s.id);
+                  return (
+                    <Box
+                      key={s.id}
+                      onClick={() => toggleStyle(s.id)}
+                      sx={{
+                        px: 1.5, py: 0.6, cursor: 'pointer',
+                        bgcolor: on ? C.ink : 'transparent',
+                        color: on ? '#fff' : C.inkSub,
+                        border: `1px solid ${on ? C.ink : C.border}`,
+                        transition: 'background-color 0.15s, color 0.15s, border-color 0.15s',
+                        '&:hover': { borderColor: C.ink, color: on ? '#fff' : C.ink },
+                      }}
+                    >
+                      <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: on ? 700 : 400, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        {text.designer.styleLabels?.[s.id] ?? s.label}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Box>
 
             {/* Lighting */}
-            <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap">
+            <Box sx={{ borderTop: `1px solid ${C.borderLight}`, pt: 2, mb: 0 }}>
               <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 10,
-                color: C.inkFaint, letterSpacing: '0.12em', textTransform: 'uppercase', mr: 0.5 }}>
+                color: C.inkFaint, letterSpacing: '0.12em', textTransform: 'uppercase', mb: 1.25 }}>
                 {text.designer.lightingLabel}
               </Typography>
-              {LIGHTING_MODES.map(l => {
-                const on = pendingLighting === l.id;
-                return (
-                  <Box
-                    key={l.id}
-                    onClick={() => setPendingLighting(l.id)}
-                    sx={{
-                      px: 1.5, py: 0.6, cursor: 'pointer',
-                      bgcolor: on ? C.chip : C.surface,
-                      color: on ? C.ink : C.inkMuted,
-                      border: `1px solid ${on ? C.ink : C.border}`,
-                      transition: 'background-color 0.15s, border-color 0.15s',
-                      '&:hover': { borderColor: C.ink, color: C.ink },
-                    }}
-                  >
-                    <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: on ? 700 : 400, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                      {text.designer.lightingLabels?.[l.id] ?? l.label}
-                    </Typography>
-                  </Box>
-                );
-              })}
-            </Stack>
+              <Stack direction="row" gap={0.75} flexWrap="wrap">
+                {LIGHTING_MODES.map(l => {
+                  const on = pendingLighting === l.id;
+                  return (
+                    <Box
+                      key={l.id}
+                      onClick={() => setPendingLighting(l.id)}
+                      sx={{
+                        px: 1.5, py: 0.6, cursor: 'pointer',
+                        bgcolor: on ? C.chip : 'transparent',
+                        color: on ? C.ink : C.inkMuted,
+                        border: `1px solid ${on ? C.ink : C.border}`,
+                        transition: 'background-color 0.15s, border-color 0.15s',
+                        '&:hover': { borderColor: C.ink, color: C.ink },
+                      }}
+                    >
+                      <Typography sx={{ fontFamily: FONT_HEAD, fontWeight: on ? 700 : 400, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        {text.designer.lightingLabels?.[l.id] ?? l.label}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Box>
 
             {/* Generate CTA */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1.5 }}>
+            <Box sx={{ borderTop: `1px solid ${C.borderLight}`, pt: 2, mt: 2 }}>
               <Box
                 component="button"
                 onClick={handleGenerate}
                 disabled={anyBusy}
                 sx={{
-                  display: 'flex', alignItems: 'center', gap: 0.75,
-                  px: 2, py: 0.85,
-                  bgcolor: anyBusy ? C.chip : C.ink, color: anyBusy ? C.inkFaint : '#fff',
+                  width: '100%', py: 1.75,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  bgcolor: anyBusy ? C.chip : C.ink, color: anyBusy ? C.inkFaint : '#F6F4F1',
                   border: `1px solid ${anyBusy ? C.border : C.ink}`,
                   fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 11,
-                  letterSpacing: '0.1em', textTransform: 'uppercase',
+                  letterSpacing: '0.14em', textTransform: 'uppercase',
                   cursor: anyBusy ? 'default' : 'pointer',
-                  transition: 'background-color 0.15s',
-                  '&:hover:not(:disabled)': { bgcolor: '#333' },
+                  transition: 'background-color 0.2s',
+                  '&:hover:not(:disabled)': { bgcolor: '#333', borderColor: '#333' },
                   '&:disabled': { opacity: 0.45 },
                 }}
               >

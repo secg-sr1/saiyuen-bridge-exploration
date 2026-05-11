@@ -34,14 +34,14 @@ const TOUR_PROMPT = {
 
 const C = {
   bg:          '#F6F4F1',
-  border:      '#E2DFDB',
-  borderLight: '#EEECE8',
-  ink:         '#111111',
-  inkSub:      '#555555',
-  inkMuted:    '#999999',
-  inkFaint:    '#BBBBBB',
+  border:      '#D4D0CB',
+  borderLight: '#E2DFDB',
+  ink:         '#1a1a1a',
+  inkSub:      '#2b2b2b',
+  inkMuted:    '#444444',
+  inkFaint:    '#666666',
   chip:        '#EEECE8',
-  chipActive:  '#111111',
+  chipActive:  '#1a1a1a',
 };
 const FONT_HEAD  = 'Manrope, Arial, sans-serif';
 const FONT_LABEL = 'Manrope, Arial, sans-serif';
@@ -266,22 +266,41 @@ export default function AgentChat() {
 
           <Box sx={{
             position: 'fixed',
-            top: 0, left: 0, bottom: 0,
+            top: { xs: 'auto', sm: 0 },
+            left: 0,
+            bottom: 0,
+            right: { xs: 0, sm: 'auto' },
             width: { xs: '100%', sm: '400px', md: '420px' },
-            bgcolor: 'rgba(246,244,241,0.88)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
+            maxHeight: { xs: '46vh', sm: '100vh' },
+            bgcolor: 'rgba(246,244,241,0.58)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
             color: C.ink,
             zIndex: 9999,
             display: 'flex',
             flexDirection: 'column',
             borderRight: { xs: 'none', sm: `1px solid ${C.border}` },
-            animation: 'slideInLeft 0.24s ease-out',
+            borderTop: { xs: `1px solid ${C.border}`, sm: 'none' },
+            animation: isMobile ? 'slideInBottom 0.28s ease-out' : 'slideInLeft 0.24s ease-out',
             '@keyframes slideInLeft': {
               from: { opacity: 0, transform: 'translateX(-24px)' },
               to:   { opacity: 1, transform: 'translateX(0)' },
             },
+            '@keyframes slideInBottom': {
+              from: { opacity: 0, transform: 'translateY(24px)' },
+              to:   { opacity: 1, transform: 'translateY(0)' },
+            },
           }}>
+
+            {/* Mobile bottom-sheet drag handle */}
+            <Box sx={{
+              display: { xs: 'flex', sm: 'none' },
+              justifyContent: 'center',
+              pt: 1.25, pb: 0.25,
+              flexShrink: 0,
+            }}>
+              <Box sx={{ width: 28, height: 2, bgcolor: C.border }} />
+            </Box>
 
             {/* Header */}
             <Box sx={{
@@ -330,7 +349,7 @@ export default function AgentChat() {
                   sx={{
                     fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11,
                     letterSpacing: '0.1em', textTransform: 'uppercase',
-                    color: C.inkMuted, cursor: 'pointer', transition: 'color 0.15s',
+                    color: '#2b2b2b', cursor: 'pointer', transition: 'color 0.15s',
                     '&:hover': { color: C.ink },
                   }}
                 >
@@ -356,20 +375,21 @@ export default function AgentChat() {
                     {text.chat.empty}
                   </Typography>
 
-                  <Stack direction="row" spacing={1} sx={{ mb: 2.5 }}>
+                  <Stack direction="column" spacing={1} sx={{ mb: 3 }}>
                     <Box
                       component="button"
                       onClick={handleTour}
                       disabled={isAgentThinking}
                       sx={{
-                        display: 'flex', alignItems: 'center', gap: 0.75,
-                        px: 1.5, py: 0.75, cursor: 'pointer',
-                        bgcolor: 'transparent', color: C.ink,
-                        border: `1px solid ${C.border}`,
-                        fontFamily: FONT_HEAD, fontWeight: 600, fontSize: 11,
-                        letterSpacing: '0.08em', textTransform: 'uppercase',
-                        transition: 'border-color 0.15s',
-                        '&:hover': { borderColor: C.ink },
+                        width: '100%', py: 1.75,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        cursor: 'pointer',
+                        bgcolor: C.ink, color: '#F6F4F1',
+                        border: `1px solid ${C.ink}`,
+                        fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 11,
+                        letterSpacing: '0.14em', textTransform: 'uppercase',
+                        transition: 'background-color 0.2s',
+                        '&:hover': { bgcolor: '#333', borderColor: '#333' },
                         '&:disabled': { opacity: 0.4, cursor: 'default' },
                       }}
                     >
@@ -383,14 +403,15 @@ export default function AgentChat() {
                         : 'Generate 3 hyperrealistic bridge design alternatives for this landscape. Show all styles.'); }}
                       disabled={isAgentThinking}
                       sx={{
-                        display: 'flex', alignItems: 'center', gap: 0.75,
-                        px: 1.5, py: 0.75, cursor: 'pointer',
-                        bgcolor: 'transparent', color: C.inkMuted,
-                        border: `1px solid ${C.border}`,
-                        fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 11,
-                        letterSpacing: '0.08em', textTransform: 'uppercase',
-                        transition: 'border-color 0.15s, color 0.15s',
-                        '&:hover': { borderColor: C.ink, color: C.ink },
+                        width: '100%', py: 1.75,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        cursor: 'pointer',
+                        bgcolor: 'transparent', color: C.ink,
+                        border: `1px solid ${C.ink}`,
+                        fontFamily: FONT_HEAD, fontWeight: 600, fontSize: 11,
+                        letterSpacing: '0.12em', textTransform: 'uppercase',
+                        transition: 'background-color 0.2s, color 0.2s',
+                        '&:hover': { bgcolor: C.ink, color: '#F6F4F1' },
                         '&:disabled': { opacity: 0.4, cursor: 'default' },
                       }}
                     >
@@ -414,7 +435,7 @@ export default function AgentChat() {
                           onClick={() => handleSend(prompt)}
                           sx={{
                             display: 'flex', alignItems: 'center', gap: 1,
-                            py: 1.1, borderBottom: `1px solid ${C.borderLight}`,
+                            py: 1.25, borderBottom: `1px solid ${C.borderLight}`,
                             cursor: 'pointer',
                             '&:hover .prompt-text': { color: C.ink },
                           }}
@@ -423,7 +444,8 @@ export default function AgentChat() {
                           <Typography
                             className="prompt-text"
                             sx={{
-                              fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 13,
+                              fontFamily: FONT_HEAD, fontWeight: 400, fontSize: 12,
+                              letterSpacing: '0.02em',
                               color: C.inkMuted, transition: 'color 0.15s',
                             }}
                           >
