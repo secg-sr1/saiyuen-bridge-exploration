@@ -187,4 +187,8 @@ export let useStore = create((set) => ({
   structureCustomMaterial: null,
   setStructureCustomMaterial: (id) => set({ structureCustomMaterial: id }),
 
+  // Red LED accent light — toggles a dramatic red point light inside the stick cluster
+  redLedActive: false,
+  toggleRedLed: () => set(state => ({ redLedActive: !state.redLedActive })),
+
 }));

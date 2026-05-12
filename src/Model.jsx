@@ -109,6 +109,8 @@ export default function Model() {
   const nextStickConfig        = useStore(state => state.nextStickConfig);
   const structureCustomMaterial    = useStore(state => state.structureCustomMaterial);
   const setStructureCustomMaterial = useStore(state => state.setStructureCustomMaterial);
+  const redLedActive  = useStore(state => state.redLedActive);
+  const toggleRedLed  = useStore(state => state.toggleRedLed);
 
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
@@ -548,6 +550,38 @@ export default function Model() {
               }}
             >
               ✦ EXPLODE
+            </Box>
+            <Box
+              component="button"
+              onClick={toggleRedLed}
+              title="Toggle red LED"
+              sx={{
+                px: 2, py: 1.25,
+                bgcolor: redLedActive ? 'rgba(180,0,0,0.18)' : 'rgba(13,13,13,0.88)',
+                backdropFilter: 'blur(12px)',
+                border: `1px solid ${redLedActive ? '#ff1200' : C.outline}`,
+                color: redLedActive ? '#ff4422' : C.onSurfaceDim,
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '5px',
+                whiteSpace: 'nowrap',
+                transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
+                boxShadow: redLedActive ? '0 0 14px rgba(255,18,0,0.45)' : 'none',
+                '&:hover': { borderColor: '#ff1200', color: '#ff4422' },
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  bgcolor: redLedActive ? '#ff1200' : 'rgba(255,18,0,0.28)',
+                  boxShadow: redLedActive ? '0 0 8px #ff1200, 0 0 16px rgba(255,18,0,0.6)' : 'none',
+                  transition: 'background-color 0.15s, box-shadow 0.15s',
+                  flexShrink: 0,
+                }}
+              />
+              <Box component="span" sx={{ fontFamily: FONT_LABEL, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                LED
+              </Box>
             </Box>
           </Box>
         </Box>

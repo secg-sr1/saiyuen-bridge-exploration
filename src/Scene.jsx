@@ -360,15 +360,273 @@ const STICK_CONFIGS = [
     const z     = -t * 18 + seededRandom(i * 5 + 2) * 2;
     return [Math.cos(angle) * cone, Math.sin(angle) * cone, z];
   },
+
+  // 30: Facade — flat orthogonal grid in the XY plane (lattice face-on)
+  (i, _n) => {
+    const cols = 32;
+    const col  = i % cols;
+    const row  = Math.floor(i / cols);
+    return [(col - cols / 2 + 0.5) * 1.3, (row - 14) * 1.3, 0];
+  },
+
+  // 31: Deep Lattice — 3D volumetric grid, box filled with regular nodes
+  (i, _n) => {
+    const cx = 18, cy = 8, cz = 7;
+    const col  = i % cx;
+    const row  = Math.floor(i / cx) % cy;
+    const dep  = Math.floor(i / (cx * cy)) % cz;
+    return [(col - cx / 2 + 0.5) * 1.5, (row - cy / 2 + 0.5) * 2.2, (dep - cz / 2 + 0.5) * 2.8];
+  },
+
+  // 32: Cross Brace — paired sticks as alternating X-diagonals within grid cells
+  (i, _n) => {
+    const cols = 16;
+    const pair = Math.floor(i / 2);
+    const col  = pair % cols;
+    const row  = Math.floor(pair / cols);
+    const arm  = i % 2;
+    const cx   = (col - cols / 2 + 0.5) * 2.2;
+    const cy   = (row - 14) * 2.2;
+    return [cx + (arm ? 0.85 : -0.85), cy + 0.85, (seededRandom(i * 5) - 0.5) * 1.2];
+  },
+
+  // 33: Diamond — 45°-rotated planar grid (diagonal lattice)
+  (i, _n) => {
+    const cols = 28;
+    const col  = i % cols;
+    const row  = Math.floor(i / cols);
+    const u    = (col - cols / 2 + 0.5) * 1.55;
+    const v    = (row - 14) * 1.55;
+    return [(u + v) * 0.707, (v - u) * 0.707, 0];
+  },
+
+  // 34: Weave — flat grid with alternating +/−Z depth, over-under textile
+  (i, _n) => {
+    const cols = 30;
+    const col  = i % cols;
+    const row  = Math.floor(i / cols);
+    const z    = (col + row) % 2 === 0 ? 2.2 : -2.2;
+    return [(col - cols / 2 + 0.5) * 1.3, (row - 14) * 1.3, z];
+  },
+
+  // 35: Vault — sticks on a cylindrical barrel-vault surface
+  (i, _n) => {
+    const cols = 30;
+    const col  = i % cols;
+    const row  = Math.floor(i / cols);
+    const t    = (col / (cols - 1)) * Math.PI;
+    const R    = 9;
+    return [Math.cos(t) * R, (row - 14) * 1.2, Math.sin(t) * R];
+  },
+
+  // 36: Panels — grouped 4×4 modules with inter-panel gaps and random Z-tilt
+  (i, _n) => {
+    const ps  = 4;
+    const pc  = 7;
+    const wi  = i % (ps * ps);
+    const cel = Math.floor(i / (ps * ps));
+    const wx  = wi % ps;
+    const wy  = Math.floor(wi / ps);
+    const px  = cel % pc;
+    const py  = Math.floor(cel / pc);
+    const x   = (px * (ps + 1.4) + wx - pc * (ps + 1.4) / 2) * 0.92;
+    const y   = (py * (ps + 1.4) + wy - 14) * 0.92;
+    return [x, y, (seededRandom(cel * 7) - 0.5) * 4];
+  },
+
+  // 37: Isometric — three-axis crystal lattice at 60° (like a rhombic grid)
+  (i, _n) => {
+    const d  = 10;
+    const xi = (i % d) - d / 2;
+    const yi = (Math.floor(i / d) % d) - d / 2;
+    const zi = Math.floor(i / (d * d)) - d / 2;
+    const C  = Math.cos(Math.PI / 6);
+    const S  = Math.sin(Math.PI / 6);
+    return [(xi - zi) * C * 1.7, (xi * S + yi + zi * S) * 1.7, (xi + zi) * S * 1.7];
+  },
+
+  // 38: Gridshell — sticks on a doubly-curved saddle (hyperbolic paraboloid)
+  (i, _n) => {
+    const cols = 30;
+    const col  = i % cols;
+    const row  = Math.floor(i / cols);
+    const u    = (col / (cols - 1) - 0.5) * 11;
+    const v    = (row / 29 - 0.5) * 11;
+    return [u, u * v * 0.2, v];
+  },
+
+  // 39: Perforated — dense grid with alternating void clusters (punched panel)
+  (i, _n) => {
+    const cols   = 30;
+    const col    = i % cols;
+    const row    = Math.floor(i / cols);
+    const cellX  = Math.floor(col / 3);
+    const cellY  = Math.floor(row / 3);
+    const voided = (cellX + cellY) % 2 === 0;
+    const pull   = voided ? 5.5 : 1;
+    return [
+      (col - cols / 2 + 0.5) * 1.3 * pull,
+      (row - 14) * 1.3 * pull,
+      voided ? (seededRandom(i * 3) - 0.5) * 9 : 0,
+    ];
+  },
+
+  // 40: Micro — sub-unit sphere, almost zero separation (tighter than Implode)
+  (i, _n) => {
+    const theta = seededRandom(i * 31 + 5) * Math.PI * 2;
+    const phi   = Math.acos(2 * seededRandom(i * 31 + 6) - 1);
+    const mag   = 0.04 + seededRandom(i * 31 + 7) * 0.45;
+    return [Math.sin(phi) * Math.cos(theta) * mag, Math.cos(phi) * mag, Math.sin(phi) * Math.sin(theta) * mag];
+  },
+
+  // 41: Breathe — uniform tiny outward expansion, like the structure inhaling
+  (i, _n) => {
+    const theta = seededRandom(i * 7) * Math.PI * 2;
+    const phi   = Math.acos(2 * seededRandom(i * 7 + 1) - 1);
+    const mag   = 0.35 + seededRandom(i * 7 + 2) * 0.25;
+    return [Math.sin(phi) * Math.cos(theta) * mag, Math.cos(phi) * mag, Math.sin(phi) * Math.sin(theta) * mag];
+  },
+
+  // 42: Drift — all sticks shift gently in +X like a soft lateral wind
+  (i, _n) => {
+    const dx = 0.5 + seededRandom(i * 11 + 2) * 1.0;
+    const dy = (seededRandom(i * 11)     - 0.5) * 0.7;
+    const dz = (seededRandom(i * 11 + 1) - 0.5) * 0.7;
+    return [dx, dy, dz];
+  },
+
+  // 43: Settle — sticks sag slightly downward, gravity pulling them by a whisker
+  (i, _n) => {
+    const dx = (seededRandom(i * 17)     - 0.5) * 0.5;
+    const dz = (seededRandom(i * 17 + 1) - 0.5) * 0.5;
+    const dy = -(0.3 + seededRandom(i * 17 + 2) * 1.1);
+    return [dx, dy, dz];
+  },
+
+  // 44: Quake — strong lateral XZ jitter, minimal vertical displacement
+  (i, _n) => {
+    const dx = (seededRandom(i * 29)     - 0.5) * 1.6;
+    const dy = (seededRandom(i * 29 + 1) - 0.5) * 0.35;
+    const dz = (seededRandom(i * 29 + 2) - 0.5) * 1.3;
+    return [dx, dy, dz];
+  },
+
+  // 45: Clusters — sticks flock into 6 tight micro-pods arranged in a ring
+  (i, _n) => {
+    const k     = 6;
+    const c     = i % k;
+    const theta = (c / k) * Math.PI * 2;
+    const R     = 1.5;
+    const cx    = Math.cos(theta) * R;
+    const cz    = Math.sin(theta) * R;
+    const cy    = (c % 2) * 0.7 - 0.35;
+    return [
+      cx + (seededRandom(i * 13)     - 0.5) * 0.45,
+      cy + (seededRandom(i * 13 + 1) - 0.5) * 0.45,
+      cz + (seededRandom(i * 13 + 2) - 0.5) * 0.45,
+    ];
+  },
+
+  // 46: Crease — bilateral fold: left side drifts left, right side drifts right
+  (i, _n) => {
+    const side = seededRandom(i * 41) > 0.5 ? 1 : -1;
+    const dx   = side * (0.4 + seededRandom(i * 41 + 1) * 0.9);
+    const dy   = (seededRandom(i * 41 + 2) - 0.5) * 0.6;
+    const dz   = (seededRandom(i * 41 + 3) - 0.5) * 0.6;
+    return [dx, dy, dz];
+  },
+
+  // 47: Mist — flat horizontal cloud, nearly planar, wide XZ spread, thin in Y
+  (i, _n) => {
+    const theta  = seededRandom(i * 19) * Math.PI * 2;
+    const radius = 0.25 + seededRandom(i * 19 + 1) * 2.2;
+    const dy     = (seededRandom(i * 19 + 2) - 0.5) * 0.3;
+    return [Math.cos(theta) * radius, dy, Math.sin(theta) * radius];
+  },
+
+  // 48: Incline — mist disc tilted 30° forward (rotation around X axis)
+  (i, _n) => {
+    const theta  = seededRandom(i * 19) * Math.PI * 2;
+    const r      = 0.25 + seededRandom(i * 19 + 1) * 2.2;
+    const flat   = (seededRandom(i * 19 + 2) - 0.5) * 0.3;
+    const a      = Math.PI / 6;
+    return [
+      Math.cos(theta) * r,
+      flat * Math.cos(a) - Math.sin(theta) * r * Math.sin(a),
+      flat * Math.sin(a) + Math.sin(theta) * r * Math.cos(a),
+    ];
+  },
+
+  // 49: Tilt — mist disc tilted 45° (halfway between horizontal and vertical)
+  (i, _n) => {
+    const theta  = seededRandom(i * 19) * Math.PI * 2;
+    const r      = 0.25 + seededRandom(i * 19 + 1) * 2.2;
+    const flat   = (seededRandom(i * 19 + 2) - 0.5) * 0.3;
+    const a      = Math.PI / 4;
+    return [
+      Math.cos(theta) * r,
+      flat * Math.cos(a) - Math.sin(theta) * r * Math.sin(a),
+      flat * Math.sin(a) + Math.sin(theta) * r * Math.cos(a),
+    ];
+  },
+
+  // 50: Veil — disc rotated 90°: stands vertical in the XY plane, thin in Z
+  (i, _n) => {
+    const theta  = seededRandom(i * 19) * Math.PI * 2;
+    const r      = 0.25 + seededRandom(i * 19 + 1) * 2.2;
+    const flat   = (seededRandom(i * 19 + 2) - 0.5) * 0.3;
+    return [Math.cos(theta) * r, Math.sin(theta) * r, flat];
+  },
+
+  // 51: Curtain — disc rotated 90° around Z: vertical plane in YZ, thin in X
+  (i, _n) => {
+    const theta  = seededRandom(i * 19) * Math.PI * 2;
+    const r      = 0.25 + seededRandom(i * 19 + 1) * 2.2;
+    const flat   = (seededRandom(i * 19 + 2) - 0.5) * 0.3;
+    return [flat, Math.cos(theta) * r, Math.sin(theta) * r];
+  },
+
+  // 52: Fan — 8 thin blade-strips, each blade rotated around Y at equal intervals
+  (i, _n) => {
+    const blades = 8;
+    const b      = i % blades;
+    const a      = (b / blades) * Math.PI;
+    const lx     = (seededRandom(i * 23)     - 0.5) * 4.5;
+    const ly     = (seededRandom(i * 23 + 1) - 0.5) * 1.1;
+    const lz     = (seededRandom(i * 23 + 2) - 0.5) * 0.22;
+    return [
+      lx * Math.cos(a) + lz * Math.sin(a),
+      ly,
+      -lx * Math.sin(a) + lz * Math.cos(a),
+    ];
+  },
+
+  // 53: Gyro — disc tilt precesses continuously with stick index (0 → horizontal, n → vertical)
+  (i, n) => {
+    const theta  = seededRandom(i * 19) * Math.PI * 2;
+    const r      = 0.25 + seededRandom(i * 19 + 1) * 2.2;
+    const flat   = (seededRandom(i * 19 + 2) - 0.5) * 0.3;
+    const a      = (i / n) * Math.PI;
+    return [
+      Math.cos(theta) * r * Math.cos(a) - flat * Math.sin(a),
+      Math.cos(theta) * r * Math.sin(a) + flat * Math.cos(a),
+      Math.sin(theta) * r,
+    ];
+  },
 ];
 
 export const STICK_CONFIG_NAMES = [
-  'SCATTER', 'ALT SCATTER', 'RADIAL',   'VORTEX',    'ORBITAL',
-  'DNA',     'PULSE',       'GALAXY',   'WAVE',      'GRID',
-  'CONE',    'SHELL',       'TORNADO',  'TORUS',     'FIBONACCI',
-  'BUTTERFLY','COLUMN',     'PYRAMID',  'BLAST',     'MOBIUS',
-  'HELIX X4','STARBURST',   'CLOUD',    'WHIRLPOOL', 'RIPPLE',
-  'CROSS',   'LATTICE',     'IMPLODE',  'ZIGZAG',    'COMET',
+  'SCATTER',   'ALT SCATTER', 'RADIAL',     'VORTEX',     'ORBITAL',
+  'DNA',       'PULSE',       'GALAXY',     'WAVE',       'GRID',
+  'CONE',      'SHELL',       'TORNADO',    'TORUS',      'FIBONACCI',
+  'BUTTERFLY', 'COLUMN',      'PYRAMID',    'BLAST',      'MOBIUS',
+  'HELIX X4',  'STARBURST',   'CLOUD',      'WHIRLPOOL',  'RIPPLE',
+  'CROSS',     'LATTICE',     'IMPLODE',    'ZIGZAG',     'COMET',
+  'FACADE',    'DEEP LATTICE','CROSS BRACE','DIAMOND',    'WEAVE',
+  'VAULT',     'PANELS',      'ISOMETRIC',  'GRIDSHELL',  'PERFORATED',
+  'MICRO',     'BREATHE',     'DRIFT',      'SETTLE',     'QUAKE',
+  'CLUSTERS',  'CREASE',      'MIST',       'INCLINE',    'TILT',
+  'VEIL',      'CURTAIN',     'FAN',        'GYRO',
 ];
 
 // Material preset table — PBR fields use MeshStandardMaterial clearcoat / envMapIntensity (three r152+).
@@ -377,53 +635,53 @@ const PRESETS = {
     color: 0xbab4ad,
     roughness: 0.9,
     metalness: 0.04,
-    envMapIntensity: 0.95,
-    clearcoat: 0.1,
-    clearcoatRoughness: 0.55,
+    envMapIntensity: 0.40,
+    clearcoat: 0.04,
+    clearcoatRoughness: 0.70,
     bumpScale: 0.055,
   },
   concrete: {
     color: 0xbeb9b3,
     roughness: 0.82,
     metalness: 0.03,
-    envMapIntensity: 0.65,
-    clearcoat: 0.04,
-    clearcoatRoughness: 0.75,
+    envMapIntensity: 0.28,
+    clearcoat: 0.02,
+    clearcoatRoughness: 0.85,
     bumpScale: 0.048,
   },
   limestone: {
     color: 0xe5dcc8,
     roughness: 0.86,
     metalness: 0.02,
-    envMapIntensity: 0.75,
-    clearcoat: 0.06,
-    clearcoatRoughness: 0.65,
+    envMapIntensity: 0.32,
+    clearcoat: 0.02,
+    clearcoatRoughness: 0.80,
     bumpScale: 0.05,
   },
   marble: {
     color: 0xf4f2ef,
-    roughness: 0.28,
+    roughness: 0.32,
     metalness: 0.06,
-    envMapIntensity: 1.40,
-    clearcoat: 0.32,
-    clearcoatRoughness: 0.26,
+    envMapIntensity: 0.65,
+    clearcoat: 0.12,
+    clearcoatRoughness: 0.48,
     bumpScale: 0.022,
   },
   steel: {
     color: 0x8a9bab,
-    roughness: 0.18,
-    metalness: 0.92,
-    envMapIntensity: 1.55,
-    clearcoat: 0.55,
-    clearcoatRoughness: 0.20,
+    roughness: 0.22,
+    metalness: 0.88,
+    envMapIntensity: 0.85,
+    clearcoat: 0.22,
+    clearcoatRoughness: 0.38,
     bumpScale: 0.012,
   },
-  wood:        { color: 0x8b5e3c, roughness: 0.92, metalness: 0,    envMapIntensity: 0.55, clearcoat: 0.04, clearcoatRoughness: 0.85, bumpScale: 0.06 },
-  gold:        { color: 0xd4af37, roughness: 0.16,  metalness: 1.0, envMapIntensity: 1.60,  clearcoat: 0.28, clearcoatRoughness: 0.18, bumpScale: 0.01 },
-  jade:        { color: 0x4a8c6a, roughness: 0.45,  metalness: 0.12, envMapIntensity: 0.92,  clearcoat: 0.28,  clearcoatRoughness: 0.34,  bumpScale: 0.02 },
-  pumpkin:     { color: 0xc05a00, roughness: 0.82, metalness: 0,    envMapIntensity: 0.5,  clearcoat: 0.05, clearcoatRoughness: 0.85, bumpScale: 0.04 },
-  oogie:       { color: 0xb89a60, roughness: 0.97, metalness: 0,    envMapIntensity: 0.45, clearcoat: 0.02, clearcoatRoughness: 0.95, bumpScale: 0.05 },
-  sandworm:    { color: 0xd2be84, roughness: 0.99, metalness: 0,    envMapIntensity: 0.48, clearcoat: 0.02, clearcoatRoughness: 0.95, bumpScale: 0.05 },
+  wood:        { color: 0x8b5e3c, roughness: 0.92, metalness: 0,    envMapIntensity: 0.22, clearcoat: 0.02, clearcoatRoughness: 0.90, bumpScale: 0.06 },
+  gold:        { color: 0xd4af37, roughness: 0.20,  metalness: 1.0, envMapIntensity: 0.90,  clearcoat: 0.12, clearcoatRoughness: 0.32, bumpScale: 0.01 },
+  jade:        { color: 0x4a8c6a, roughness: 0.50,  metalness: 0.10, envMapIntensity: 0.42,  clearcoat: 0.08,  clearcoatRoughness: 0.55,  bumpScale: 0.02 },
+  pumpkin:     { color: 0xc05a00, roughness: 0.82, metalness: 0,    envMapIntensity: 0.22,  clearcoat: 0.02, clearcoatRoughness: 0.90, bumpScale: 0.04 },
+  oogie:       { color: 0xb89a60, roughness: 0.97, metalness: 0,    envMapIntensity: 0.18, clearcoat: 0.01, clearcoatRoughness: 0.95, bumpScale: 0.05 },
+  sandworm:    { color: 0xd2be84, roughness: 0.99, metalness: 0,    envMapIntensity: 0.20, clearcoat: 0.01, clearcoatRoughness: 0.95, bumpScale: 0.05 },
   jack:        { mapFn: () => jackStripe('#080810', '#eceef8'),   roughness: 0.86, metalness: 0    },
   jacknight:   { mapFn: () => jackStripe('#05071a', '#90b8d8'),   roughness: 0.84, metalness: 0    },
   jackpurple:  { mapFn: () => jackStripe('#120820', '#c8a4e8'),   roughness: 0.85, metalness: 0    },
@@ -576,7 +834,7 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
     const DEFAULT_MAT = new MeshStandardMaterial({ color: new Color(0.75, 0.75, 0.75), roughness: 0.7, metalness: 0.1 });
     DEFAULT_MAT.bumpMap = BRIDGE_BUMP;
     DEFAULT_MAT.bumpScale = 0.042;
-    DEFAULT_MAT.envMapIntensity = 1;
+    DEFAULT_MAT.envMapIntensity = 0.45;
     const saved = [];
     gltf.scene.traverse((child) => {
       if (!child.isMesh) return;
@@ -593,23 +851,23 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
           if (isPBR(mat)) {
             mat.metalness = 0.97;
             mat.roughness = 0.28;
-            mat.envMapIntensity = 1.70;
-            mat.clearcoat = 0.30;
-            mat.clearcoatRoughness = 0.22;
+            mat.envMapIntensity = 0.72;
+            mat.clearcoat = 0.10;
+            mat.clearcoatRoughness = 0.45;
             mat.bumpMap = null;
             mat.bumpScale = 0;
           }
         } else if (archWhiteGloss) {
           if ('map' in mat) mat.map = null;
-          if (mat.color) mat.color.setRGB(0.98, 0.99, 1);
+          if (mat.color) mat.color.setRGB(0.95, 0.91, 0.85);
           if (isPBR(mat)) {
-            mat.metalness = 0.12;
-            mat.roughness = 0.16;
-            mat.envMapIntensity = 1.55;
-            mat.clearcoat = 0.58;
-            mat.clearcoatRoughness = 0.16;
-            mat.bumpMap = null;
-            mat.bumpScale = 0;
+            mat.metalness = 0.0;
+            mat.roughness = 0.48;
+            mat.envMapIntensity = 0.35;
+            mat.clearcoat = 0.06;
+            mat.clearcoatRoughness = 0.70;
+            mat.bumpMap = BRIDGE_BUMP;
+            mat.bumpScale = 0.028;
           }
         }
         // Lighten meshes that came in with a pure-black color (no texture)
@@ -770,15 +1028,15 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
         else mat.map = null;
         if (archWhiteGloss) {
           mat.map = null;
-          mat.color.setHex(0xffffff);
-          mat.roughness = Math.min(preset.roughness, 0.20);
-          mat.metalness = 0.12;
+          mat.color.setHex(0xf2e9dc);
+          mat.roughness = Math.max(preset.roughness * 0.72, 0.42);
+          mat.metalness = 0.0;
           applyPBRMaps(
-            null,
-            0,
-            Math.max(preset.envMapIntensity ?? 1, 1.50),
-            Math.max(preset.clearcoat ?? 0, 0.52),
-            Math.min(preset.clearcoatRoughness ?? 0.28, 0.20),
+            BRIDGE_BUMP,
+            0.028,
+            Math.min(preset.envMapIntensity ?? 0.35, 0.42),
+            Math.min(preset.clearcoat ?? 0, 0.08),
+            Math.max(preset.clearcoatRoughness ?? 0.70, 0.65),
           );
         } else {
           mat.color.setHex(preset.color);
@@ -794,9 +1052,9 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
           applyPBRMaps(
             railShine ? null : BRIDGE_BUMP,
             railShine ? 0 : (preset.bumpScale ?? 0.045),
-            railShine ? Math.max(preset.envMapIntensity ?? 1, 1.62) : (preset.envMapIntensity ?? 1),
-            railShine ? Math.max(preset.clearcoat ?? 0, 0.22) : (preset.clearcoat ?? 0),
-            railShine ? 0.28 : (preset.clearcoatRoughness ?? 0),
+            railShine ? Math.max(preset.envMapIntensity ?? 0.72, 0.80) : (preset.envMapIntensity ?? 1),
+            railShine ? Math.max(preset.clearcoat ?? 0, 0.08) : (preset.clearcoat ?? 0),
+            railShine ? 0.45 : (preset.clearcoatRoughness ?? 0),
           );
         }
       }
@@ -997,6 +1255,7 @@ export default function Scene() {
   const selectedHandrail = useStore(state => state.selectedHandrail);
   const assembleKey             = useStore(state => state.assembleKey);
   const structureCustomMaterial = useStore(state => state.structureCustomMaterial);
+  const redLedActive            = useStore(state => state.redLedActive);
 
   const { gl, camera, scene, get } = useThree();
   useEffect(() => { setGl(gl); }, [gl]);
@@ -1004,7 +1263,7 @@ export default function Scene() {
   useEffect(() => {
     gl.outputColorSpace = SRGBColorSpace;
     gl.toneMapping = ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.10;
+    gl.toneMappingExposure = 0.82;
   }, [gl]);
 
   const cameraRef      = useRef();
@@ -1042,7 +1301,7 @@ export default function Scene() {
   // Lighting mode: adjust light color/intensity per mode
   useEffect(() => {
     const LIGHTING = {
-      day:   { dirColor: 0xfff8f0, dirIntensity: 1.30, ambColor: 0xffffff, ambIntensity: 0.34, fillColor: 0xd8eaf8, fillIntensity: 0.42 },
+      day:   { dirColor: 0xfff8f0, dirIntensity: 0.82, ambColor: 0xffffff, ambIntensity: 0.20, fillColor: 0xd8eaf8, fillIntensity: 0.14 },
       dusk:  { dirColor: 0xff7733, dirIntensity: 1.10, ambColor: 0xff5522, ambIntensity: 0.30, fillColor: 0x7733aa, fillIntensity: 0.20 },
       night: { dirColor: 0x4466cc, dirIntensity: 0.42, ambColor: 0x112255, ambIntensity: 0.20, fillColor: 0x223388, fillIntensity: 0.12 },
     };
@@ -1234,12 +1493,19 @@ export default function Scene() {
       />
 
       <Suspense fallback={null}>
-        <Environment preset="studio" environmentIntensity={0.85} background={false} />
+        <Environment preset="studio" environmentIntensity={0.32} background={false} />
       </Suspense>
-      <hemisphereLight args={[0xd4eaf8, 0x221e1c, 0.30]} />
-      <directionalLight ref={dirLightRef} castShadow={false} position={[14, 22, 10]} intensity={1.30} />
-      <directionalLight ref={fillLightRef} castShadow={false} position={[-10, 6, -8]} intensity={0.42} color={0xd8eaf8} />
+      <hemisphereLight args={[0xd4eaf8, 0x221e1c, 0.14]} />
+      <directionalLight ref={dirLightRef} castShadow={false} position={[14, 22, 10]} intensity={0.82} />
+      <directionalLight ref={fillLightRef} castShadow={false} position={[-10, 6, -8]} intensity={0.14} color={0xd8eaf8} />
       <ambientLight ref={ambLightRef} intensity={0.34} />
+
+      {redLedActive && (
+        <>
+          <pointLight position={[18, 2.8, 1.6]} color={0xff1200} intensity={12} distance={38} decay={2} />
+          <pointLight position={[32, 2.8, 1.6]} color={0xff1200} intensity={12} distance={38} decay={2} />
+        </>
+      )}
 
       {/* Floor / base layer — all segments rendered together */}
       {(showBase || (timelineStep !== null && timelineStep >= 1)) && (
