@@ -104,6 +104,7 @@ export default function Model() {
   const language = useStore(state => state.language);
   const setLanguage = useStore(state => state.setLanguage);
   const triggerAssemble = useStore(state => state.triggerAssemble);
+  const triggerExplode = useStore(state => state.triggerExplode);
 
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
@@ -871,7 +872,7 @@ export default function Model() {
               <Box sx={{ border: '1px solid #E2DFDB', overflow: 'hidden' }}>
                 <Box
                   component="video"
-                  src="https://github.com/secg-sr1/saiyuen-alpha/raw/refs/heads/main/public/bridge-01-video.mp4"
+                  src="/bridge-v2-00-video.mp4"
                   loop muted controls
                   sx={{ width: '100%', display: 'block', filter: 'grayscale(6%) contrast(1.04)' }}
                 />
@@ -880,23 +881,43 @@ export default function Model() {
 
             {/* ── Action buttons ── */}
             <Box sx={{ px: 3, mb: 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Box
-                component="button"
-                onClick={triggerAssemble}
-                sx={{
-                  width: '100%', py: 1.75,
-                  bgcolor: '#111111', color: '#F6F4F1',
-                  border: '1px solid #111111',
-                  fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 11,
-                  letterSpacing: '0.14em', textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  transition: 'background-color 0.2s, color 0.2s',
-                  '&:hover': { bgcolor: '#c00100', borderColor: '#c00100', color: '#fff' },
-                }}
-              >
-                <Box component="span" sx={{ fontSize: 13, lineHeight: 1 }}>▶</Box>
-                ASSEMBLE
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box
+                  component="button"
+                  onClick={triggerAssemble}
+                  sx={{
+                    flex: 1, py: 1.75,
+                    bgcolor: '#111111', color: '#F6F4F1',
+                    border: '1px solid #111111',
+                    fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 11,
+                    letterSpacing: '0.14em', textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    transition: 'background-color 0.2s, color 0.2s',
+                    '&:hover': { bgcolor: '#c00100', borderColor: '#c00100', color: '#fff' },
+                  }}
+                >
+                  <Box component="span" sx={{ fontSize: 13, lineHeight: 1 }}>▶</Box>
+                  ASSEMBLE
+                </Box>
+                <Box
+                  component="button"
+                  onClick={triggerExplode}
+                  sx={{
+                    flex: 1, py: 1.75,
+                    bgcolor: '#c00100', color: '#fff',
+                    border: '1px solid #c00100',
+                    fontFamily: FONT_HEAD, fontWeight: 700, fontSize: 11,
+                    letterSpacing: '0.14em', textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    transition: 'background-color 0.2s, border-color 0.2s',
+                    '&:hover': { bgcolor: '#a00000', borderColor: '#a00000' },
+                  }}
+                >
+                  <Box component="span" sx={{ fontSize: 13, lineHeight: 1 }}>✦</Box>
+                  EXPLODE
+                </Box>
               </Box>
               <Box
                 component="button"

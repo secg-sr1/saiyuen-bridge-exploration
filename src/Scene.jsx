@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 
 import { styled } from '@mui/material/styles';
-import { useEffect, useLayoutEffect, useRef, useState, Suspense } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useLoader, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Html, useProgress, Environment, useTexture } from '@react-three/drei';
 import { setGl } from './utils/screenshot';
@@ -103,6 +103,11 @@ function beetleStripe(bgHex, stripeHex, repeat = 7) {
   tex.repeat.set(repeat, repeat);
   _texCache[key] = tex;
   return tex;
+}
+
+function seededRandom(seed) {
+  const x = Math.sin(seed * 9301 + 49297) * 233280;
+  return x - Math.floor(x);
 }
 
 // Material preset table — PBR fields use MeshStandardMaterial clearcoat / envMapIntensity (three r152+).
@@ -521,6 +526,67 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
   return <primitive object={gltf.scene} />;
 }
 
+/** Each stick segment gets its own <group> so it can be individually positioned during the explosion. */
+function ExplodingStructureParts({ structureUrls, selected, opacity, materialId, heatmapActive }) {
+  const partGroupRefs   = useRef([]);
+  const explosionVel    = useRef(0);
+  const explosionProg   = useRef(0);
+  const prevTriggerKey  = useRef(0);
+  const isExplodedRef   = useRef(false);
+
+  // Uniform-sphere random direction per stick, seeded by index so it's deterministic across renders
+  const directions = useMemo(() => structureUrls.map((_, i) => {
+    const theta = seededRandom(i * 7)     * Math.PI * 2;
+    const phi   = Math.acos(2 * seededRandom(i * 7 + 1) - 1);
+    const mag   = 3 + seededRandom(i * 7 + 2) * 10;
+    return [
+      Math.sin(phi) * Math.cos(theta) * mag,
+      Math.cos(phi) * mag,
+      Math.sin(phi) * Math.sin(theta) * mag,
+    ];
+  }), [structureUrls]);
+
+  useFrame(() => {
+    const freshTrigger = useStore.getState().explodeTriggerKey;
+    if (freshTrigger !== prevTriggerKey.current) {
+      prevTriggerKey.current = freshTrigger;
+      isExplodedRef.current = !isExplodedRef.current;
+      if (isExplodedRef.current) explosionVel.current = 0.55;
+    }
+
+    const target = isExplodedRef.current ? 1.0 : 0.0;
+    explosionVel.current  += (target - explosionProg.current) * 0.055;
+    explosionVel.current  *= 0.83;
+    explosionProg.current += explosionVel.current;
+
+    const p = Math.max(0, explosionProg.current);
+    partGroupRefs.current.forEach((ref, i) => {
+      if (!ref) return;
+      const [dx, dy, dz] = directions[i];
+      ref.position.set(dx * p, dy * p, dz * p);
+    });
+  });
+
+  return (
+    <>
+      {structureUrls.map((url, i) => (
+        <group key={url} ref={el => { partGroupRefs.current[i] = el; }}>
+          <Suspense fallback={null}>
+            <BridgePartModel
+              url={url}
+              selected={selected}
+              opacity={opacity}
+              materialId={materialId}
+              heatmapActive={heatmapActive}
+              archWhiteGloss
+            />
+          </Suspense>
+        </group>
+      ))}
+    </>
+  );
+}
+
 /** Loads shared concrete albedo once, applies to every floor GLB (step 9 at runtime vs. Blender bake). */
 function FloorPartsWithDeckTexture({ floorUrls, selected, opacity, materialId, heatmapActive }) {
   const deckMap = useTexture(concreteAlbedoUrl);
@@ -549,25 +615,6 @@ function FloorPartsWithDeckTexture({ floorUrls, selected, opacity, materialId, h
 }
 
 /** Brushed stainless albedo + high metalness / env reflections for all handrail GLBs */
-/** Bright white structure: no albedo map, high env + clearcoat for a reflective enamel look */
-function StructurePartsWhiteGloss({ structureUrls, selected, opacity, materialId, heatmapActive }) {
-  return (
-    <>
-      {structureUrls.map((url) => (
-        <Suspense key={url} fallback={null}>
-          <BridgePartModel
-            url={url}
-            selected={selected}
-            opacity={opacity}
-            materialId={materialId}
-            heatmapActive={heatmapActive}
-            archWhiteGloss
-          />
-        </Suspense>
-      ))}
-    </>
-  );
-}
 
 function HandrailPartsWithMetalTexture({ handrailUrls, selected, opacity, materialId, heatmapActive }) {
   const metalMap = useTexture(metalAlbedoUrl);
@@ -642,6 +689,7 @@ export default function Scene() {
   const pointerDownPos = useRef({ x: 0, y: 0 });
   const structureGroupRef    = useRef();
   const animatedExplodeRef   = useRef(0);
+  const explodeVelocityRef   = useRef(0);
 
   // Assembly animation refs
   const floorAssembleRef     = useRef();
@@ -774,7 +822,11 @@ export default function Scene() {
         timelineStep === 2 ? 2 :
         timelineStep !== null ? 0 :
         explodeDistance;
-      animatedExplodeRef.current += (targetY - animatedExplodeRef.current) * 0.06;
+
+      explodeVelocityRef.current += (targetY - animatedExplodeRef.current) * 0.07;
+      explodeVelocityRef.current *= 0.80;
+      animatedExplodeRef.current += explodeVelocityRef.current;
+
       const assemblyOffset = assembleFrameRef.current >= 0 ? assembleArchYRef.current : 0;
       structureGroupRef.current.position.y = animatedExplodeRef.current + assemblyOffset;
     }
@@ -884,15 +936,13 @@ export default function Scene() {
             onPointerDown={handlePointerDown}
             onClick={handlePartClick('structure')}
           >
-            <Suspense fallback={null}>
-              <StructurePartsWhiteGloss
-                structureUrls={_structureUrls}
-                selected={selectedPart === 'structure'}
-                opacity={effectiveArchOpacity}
-                materialId={structureMaterial}
-                heatmapActive={heatmapActive}
-              />
-            </Suspense>
+            <ExplodingStructureParts
+              structureUrls={_structureUrls}
+              selected={selectedPart === 'structure'}
+              opacity={effectiveArchOpacity}
+              materialId={structureMaterial}
+              heatmapActive={heatmapActive}
+            />
           </group>
         </group>
       )}

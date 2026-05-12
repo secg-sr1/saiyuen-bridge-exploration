@@ -175,4 +175,8 @@ export let useStore = create((set) => ({
     showHandrail: true,
   })),
 
+  // Explode animation — increment key to fire an upward impulse + spring bounce
+  explodeTriggerKey: 0,
+  triggerExplode: () => set(state => ({ explodeTriggerKey: state.explodeTriggerKey + 1 })),
+
 }));
