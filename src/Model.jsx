@@ -422,6 +422,62 @@ export default function Model() {
         </Box>
       )}
 
+      {/* Explode / Config strip — always on canvas, no panel needed */}
+      {!agentChatOpen && !designerOpen && !showAccordion && (
+        <Box sx={{
+          position: 'fixed',
+          bottom: 68,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'stretch',
+          gap: '1px',
+        }}>
+          <Box
+            component="button"
+            onClick={nextStickConfig}
+            sx={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              px: 2, py: 0,
+              bgcolor: 'rgba(13,13,13,0.88)',
+              backdropFilter: 'blur(12px)',
+              border: `1px solid ${C.outline}`,
+              borderRight: 'none',
+              color: C.onSurfaceDim,
+              fontFamily: FONT_LABEL, fontSize: 10,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              cursor: 'pointer', whiteSpace: 'nowrap',
+              transition: 'border-color 0.15s, color 0.15s',
+              '&:hover': { borderColor: C.primaryDeep, color: C.primary },
+            }}
+          >
+            <Box component="span" sx={{ opacity: 0.35, fontSize: 8 }}>◂</Box>
+            {STICK_CONFIG_NAMES[stickConfigIndex % STICK_CONFIG_NAMES.length]}
+            <Box component="span" sx={{ opacity: 0.35, fontSize: 8 }}>▸</Box>
+          </Box>
+          <Box
+            component="button"
+            onClick={triggerExplode}
+            sx={{
+              px: 2.5, py: 1.25,
+              bgcolor: C.primaryDeep,
+              border: `1px solid ${C.primaryDeep}`,
+              color: '#fff',
+              fontFamily: FONT_LABEL, fontSize: 10,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px',
+              whiteSpace: 'nowrap',
+              transition: 'background-color 0.15s',
+              '&:hover': { bgcolor: '#a00000', borderColor: '#a00000' },
+            }}
+          >
+            ✦ EXPLODE
+          </Box>
+        </Box>
+      )}
+
       {/* Info FAB — bottom right */}
       {!agentChatOpen && !designerOpen && !showAccordion && (
       <Box sx={{ position: 'fixed', bottom: 8, right: 16, zIndex: 10000 }}>

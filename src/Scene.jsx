@@ -148,9 +148,228 @@ const STICK_CONFIGS = [
     const y      = (ring - 2) * 2.5;
     return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
   },
+  // 5: DNA — two interleaved helical strands offset by π
+  (i, n) => {
+    const t      = i / n;
+    const strand = (i % 2) * Math.PI;
+    const angle  = t * Math.PI * 2 * 5 + strand;
+    const radius = 2.5 + seededRandom(i * 4) * 1.5;
+    const y      = (t - 0.5) * 18;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 6: Pulse — flat horizontal disc, like a shockwave at bridge level
+  (i, _n) => {
+    const angle  = seededRandom(i * 5)     * Math.PI * 2;
+    const radius = 1.5 + Math.sqrt(seededRandom(i * 5 + 1)) * 13;
+    const y      = (seededRandom(i * 5 + 2) - 0.5) * 1.5;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 7: Galaxy — 3-arm logarithmic spiral with slight vertical scatter
+  (i, n) => {
+    const t      = i / n;
+    const arm    = i % 3;
+    const angle  = t * Math.PI * 4 + (arm * Math.PI * 2 / 3);
+    const radius = 1.5 + t * 10;
+    const y      = (seededRandom(i * 4) - 0.5) * 3;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 8: Wave — pieces spread along a 3D sinusoidal ribbon
+  (i, n) => {
+    const t = i / n;
+    const x = (t - 0.5) * 22;
+    const y = Math.sin(t * Math.PI * 5) * 5 + seededRandom(i * 3)     * 1.5;
+    const z = Math.cos(t * Math.PI * 3) * 4 + seededRandom(i * 3 + 1) * 1.5;
+    return [x, y, z];
+  },
+  // 9: Grid — perfect 3D matrix, 10×10×10 spacing
+  (i, _n) => {
+    const d = 10;
+    const x = (i % d)                    - d / 2 + 0.5;
+    const y = (Math.floor(i / d) % d)    - d / 2 + 0.5;
+    const z =  Math.floor(i / (d * d))   - d / 2 + 0.5;
+    return [x * 1.6, y * 1.6, z * 1.6];
+  },
+  // 10: Cone — wide base, tapers to tip at top
+  (i, n) => {
+    const t      = i / n;
+    const angle  = seededRandom(i * 6)     * Math.PI * 2;
+    const y      = t * 14 - 3;
+    const radius = (1 - t) * 10 + 0.3 + seededRandom(i * 6 + 1) * 1.5;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 11: Shell — pieces arranged on the surface of a hollow sphere
+  (i, _n) => {
+    const theta = seededRandom(i * 11 + 1) * Math.PI * 2;
+    const phi   = Math.acos(2 * seededRandom(i * 11 + 2) - 1);
+    const r     = 8 + seededRandom(i * 11 + 3) * 2;
+    return [Math.sin(phi) * Math.cos(theta) * r, Math.cos(phi) * r, Math.sin(phi) * Math.sin(theta) * r];
+  },
+  // 12: Tornado — tight base spiraling up to wide mouth
+  (i, n) => {
+    const t      = i / n;
+    const angle  = t * Math.PI * 2 * 7 + seededRandom(i * 3) * 0.4;
+    const y      = t * 14 - 7;
+    const radius = t * 9 + 0.4 + seededRandom(i * 3 + 1) * 1.2;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 13: Torus — pieces distributed on a donut surface
+  (i, n) => {
+    const u = (i / n) * Math.PI * 2;
+    const v = seededRandom(i * 5) * Math.PI * 2;
+    const R = 7, r = 3;
+    return [
+      (R + r * Math.cos(v)) * Math.cos(u),
+      r * Math.sin(v),
+      (R + r * Math.cos(v)) * Math.sin(u),
+    ];
+  },
+  // 14: Fibonacci — golden angle phyllotaxis (sunflower viewed from above)
+  (i, _n) => {
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    const angle  = i * golden;
+    const radius = Math.sqrt(i) * 0.55;
+    const y      = (seededRandom(i * 3) - 0.5) * 4;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 15: Butterfly — two symmetric wings spreading from center
+  (i, _n) => {
+    const side   = i % 2 === 0 ? 1 : -1;
+    const angle  = seededRandom(i * 4)     * Math.PI;
+    const spread = 3 + seededRandom(i * 4 + 1) * 7;
+    const y      = (seededRandom(i * 4 + 2) - 0.3) * 8;
+    return [side * Math.cos(angle) * spread, y, Math.sin(angle) * spread * 0.65];
+  },
+  // 16: Column — tall thin vertical stack
+  (i, n) => {
+    const t      = i / n;
+    const angle  = seededRandom(i * 6)     * Math.PI * 2;
+    const radius = seededRandom(i * 6 + 1) * 2;
+    const y      = (t - 0.5) * 26;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 17: Pyramid — wide base tapering to tip
+  (i, n) => {
+    const t      = i / n;
+    const angle  = seededRandom(i * 4)     * Math.PI * 2;
+    const y      = t * 12 - 2;
+    const radius = (1 - t) * 10 + 0.3 + seededRandom(i * 4 + 1) * 1.5;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 18: Blast — extreme distance, maximum scatter
+  (i, _n) => {
+    const theta = seededRandom(i * 19 + 2) * Math.PI * 2;
+    const phi   = Math.acos(2 * seededRandom(i * 19 + 3) - 1);
+    const mag   = 10 + seededRandom(i * 19 + 4) * 18;
+    return [Math.sin(phi) * Math.cos(theta) * mag, Math.cos(phi) * mag, Math.sin(phi) * Math.sin(theta) * mag];
+  },
+  // 19: Mobius — pieces on the surface of a Möbius strip
+  (i, n) => {
+    const u     = (i / n) * Math.PI * 2;
+    const v     = (seededRandom(i * 3) - 0.5) * 3;
+    const R     = 6;
+    const twist = u / 2;
+    return [
+      (R + v * Math.cos(twist)) * Math.cos(u),
+      v * Math.sin(twist),
+      (R + v * Math.cos(twist)) * Math.sin(u),
+    ];
+  },
+  // 20: Helix X4 — four interleaved helical strands
+  (i, n) => {
+    const t      = i / n;
+    const strand = (i % 4) * (Math.PI / 2);
+    const angle  = t * Math.PI * 2 * 4 + strand;
+    const radius = 3 + seededRandom(i * 4) * 2;
+    const y      = (t - 0.5) * 16;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 21: Starburst — 12 radiating arms
+  (i, _n) => {
+    const rays  = 12;
+    const ray   = i % rays;
+    const angle = (ray / rays) * Math.PI * 2;
+    const dist  = 2 + seededRandom(i * 4)     * 10;
+    const y     = (seededRandom(i * 4 + 1) - 0.5) * 6;
+    const jit   = (seededRandom(i * 4 + 2) - 0.5) * 1.2;
+    return [Math.cos(angle) * dist + jit, y, Math.sin(angle) * dist + jit];
+  },
+  // 22: Cloud — organic sine-noise displacement
+  (i, _n) => {
+    const x = Math.sin(i * 0.10) * 3 + Math.sin(i * 0.37) * 4 + seededRandom(i * 3)     * 2.5;
+    const y = Math.cos(i * 0.13) * 3 + Math.cos(i * 0.29) * 3 + seededRandom(i * 3 + 1) * 2.5;
+    const z = Math.sin(i * 0.07) * 3 + Math.cos(i * 0.41) * 4 + seededRandom(i * 3 + 2) * 2.5;
+    return [x, y, z];
+  },
+  // 23: Whirlpool — tightening spiral draining downward
+  (i, n) => {
+    const t      = i / n;
+    const angle  = t * Math.PI * 2 * 6;
+    const radius = (1 - t) * 10 + 0.4 + seededRandom(i * 3) * 1.2;
+    const y      = -t * 10 + seededRandom(i * 3 + 1) * 1.2;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 24: Ripple — concentric rings at staggered heights like water rings
+  (i, _n) => {
+    const ring   = Math.floor(seededRandom(i * 3)     * 9);
+    const angle  = seededRandom(i * 3 + 1) * Math.PI * 2;
+    const radius = 1.2 + ring * 1.6 + seededRandom(i * 3 + 2) * 0.7;
+    const y      = (ring - 4) * 0.8 + seededRandom(i * 3 + 3) * 0.6;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 25: Cross — pieces cluster along the 3 world axes
+  (i, _n) => {
+    const axis = i % 3;
+    const dir  = seededRandom(i * 3)     > 0.5 ? 1 : -1;
+    const dist = 2 + seededRandom(i * 3 + 1) * 9;
+    const p1   = (seededRandom(i * 3 + 2) - 0.5) * 1.5;
+    const p2   = (seededRandom(i * 3 + 3) - 0.5) * 1.5;
+    if (axis === 0) return [dir * dist, p1, p2];
+    if (axis === 1) return [p1, dir * dist, p2];
+    return [p1, p2, dir * dist];
+  },
+  // 26: Lattice — 2D hexagonal grid with depth noise
+  (i, _n) => {
+    const cols = 22;
+    const col  = i % cols;
+    const row  = Math.floor(i / cols);
+    const x    = (col - cols / 2) * 1.5 + (row % 2) * 0.75;
+    const y    = (row - 22) * 1.3;
+    const z    = (seededRandom(i * 3) - 0.5) * 4;
+    return [x, y, z];
+  },
+  // 27: Implode — very tight cluster, barely separated (near-assembled look)
+  (i, _n) => {
+    const theta = seededRandom(i * 23 + 1) * Math.PI * 2;
+    const phi   = Math.acos(2 * seededRandom(i * 23 + 2) - 1);
+    const mag   = 0.3 + seededRandom(i * 23 + 3) * 1.5;
+    return [Math.sin(phi) * Math.cos(theta) * mag, Math.cos(phi) * mag, Math.sin(phi) * Math.sin(theta) * mag];
+  },
+  // 28: Zigzag — pieces stacked in 6 alternating horizontal planes
+  (i, _n) => {
+    const layer  = i % 6;
+    const angle  = seededRandom(i * 4)     * Math.PI * 2;
+    const radius = 2 + seededRandom(i * 4 + 1) * 7;
+    const y      = (layer - 2.5) * 3 + (seededRandom(i * 4 + 2) - 0.5) * 0.8;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 29: Comet — teardrop elongated along one axis, denser at the head
+  (i, n) => {
+    const t     = Math.pow(i / n, 2);
+    const angle = seededRandom(i * 5)     * Math.PI * 2;
+    const cone  = t * 6 + seededRandom(i * 5 + 1) * 2;
+    const z     = -t * 18 + seededRandom(i * 5 + 2) * 2;
+    return [Math.cos(angle) * cone, Math.sin(angle) * cone, z];
+  },
 ];
 
-export const STICK_CONFIG_NAMES = ['SCATTER', 'ALT SCATTER', 'RADIAL', 'VORTEX', 'ORBITAL'];
+export const STICK_CONFIG_NAMES = [
+  'SCATTER', 'ALT SCATTER', 'RADIAL',   'VORTEX',    'ORBITAL',
+  'DNA',     'PULSE',       'GALAXY',   'WAVE',      'GRID',
+  'CONE',    'SHELL',       'TORNADO',  'TORUS',     'FIBONACCI',
+  'BUTTERFLY','COLUMN',     'PYRAMID',  'BLAST',     'MOBIUS',
+  'HELIX X4','STARBURST',   'CLOUD',    'WHIRLPOOL', 'RIPPLE',
+  'CROSS',   'LATTICE',     'IMPLODE',  'ZIGZAG',    'COMET',
+];
 
 // Material preset table — PBR fields use MeshStandardMaterial clearcoat / envMapIntensity (three r152+).
 const PRESETS = {
