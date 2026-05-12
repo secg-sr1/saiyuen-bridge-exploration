@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 
 import { styled } from '@mui/material/styles';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, Suspense } from 'react';
 import { useLoader, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Html, useProgress, Environment, useTexture } from '@react-three/drei';
 import { setGl } from './utils/screenshot';
@@ -402,25 +402,25 @@ const PRESETS = {
   },
   marble: {
     color: 0xf4f2ef,
-    roughness: 0.32,
+    roughness: 0.28,
     metalness: 0.06,
-    envMapIntensity: 1.05,
-    clearcoat: 0.18,
-    clearcoatRoughness: 0.35,
-    bumpScale: 0.025,
+    envMapIntensity: 1.40,
+    clearcoat: 0.32,
+    clearcoatRoughness: 0.26,
+    bumpScale: 0.022,
   },
   steel: {
     color: 0x8a9bab,
-    roughness: 0.22,
-    metalness: 0.88,
-    envMapIntensity: 1.15,
-    clearcoat: 0.35,
-    clearcoatRoughness: 0.28,
-    bumpScale: 0.015,
+    roughness: 0.18,
+    metalness: 0.92,
+    envMapIntensity: 1.55,
+    clearcoat: 0.55,
+    clearcoatRoughness: 0.20,
+    bumpScale: 0.012,
   },
-  wood:        { color: 0x8b5e3c, roughness: 0.95, metalness: 0,    envMapIntensity: 0.45, clearcoat: 0.02, clearcoatRoughness: 0.9, bumpScale: 0.06 },
-  gold:        { color: 0xd4af37, roughness: 0.2,  metalness: 1.0, envMapIntensity: 1.2,  clearcoat: 0.15, clearcoatRoughness: 0.25, bumpScale: 0.01 },
-  jade:        { color: 0x4a8c6a, roughness: 0.5,  metalness: 0.1, envMapIntensity: 0.7,  clearcoat: 0.2,  clearcoatRoughness: 0.4,  bumpScale: 0.02 },
+  wood:        { color: 0x8b5e3c, roughness: 0.92, metalness: 0,    envMapIntensity: 0.55, clearcoat: 0.04, clearcoatRoughness: 0.85, bumpScale: 0.06 },
+  gold:        { color: 0xd4af37, roughness: 0.16,  metalness: 1.0, envMapIntensity: 1.60,  clearcoat: 0.28, clearcoatRoughness: 0.18, bumpScale: 0.01 },
+  jade:        { color: 0x4a8c6a, roughness: 0.45,  metalness: 0.12, envMapIntensity: 0.92,  clearcoat: 0.28,  clearcoatRoughness: 0.34,  bumpScale: 0.02 },
   pumpkin:     { color: 0xc05a00, roughness: 0.82, metalness: 0,    envMapIntensity: 0.5,  clearcoat: 0.05, clearcoatRoughness: 0.85, bumpScale: 0.04 },
   oogie:       { color: 0xb89a60, roughness: 0.97, metalness: 0,    envMapIntensity: 0.45, clearcoat: 0.02, clearcoatRoughness: 0.95, bumpScale: 0.05 },
   sandworm:    { color: 0xd2be84, roughness: 0.99, metalness: 0,    envMapIntensity: 0.48, clearcoat: 0.02, clearcoatRoughness: 0.95, bumpScale: 0.05 },
@@ -433,6 +433,18 @@ const PRESETS = {
 };
 
 // GLB URL arrays — sorted alphabetically so index 0 = _01, index 1 = _02, etc.
+const _matGlob = import.meta.glob('./assets/glb-models/material/*.png', { eager: true, query: '?url', import: 'default' });
+const _matUrls = Object.entries(_matGlob).sort(([a],[b]) => a.localeCompare(b)).map(([,u]) => u);
+export const CUSTOM_MATERIALS = [
+  { id: 'anodized-aluminum', label: 'Anodized Aluminum', url: _matUrls[0] },
+  { id: 'charred-wood',      label: 'Charred Wood',      url: _matUrls[1] },
+  { id: 'rice-paper',        label: 'Rice Paper',         url: _matUrls[2] },
+  { id: 'soft-fabric',       label: 'Soft Fabric',        url: _matUrls[3] },
+  { id: 'dark-stone',        label: 'Dark Stone',         url: _matUrls[4] },
+  { id: 'microcement',       label: 'Microcement',        url: _matUrls[5] },
+  { id: 'kkuma-wood',        label: 'Kkuma Wood',         url: _matUrls[6] },
+];
+
 const _floorGlob    = import.meta.glob('./assets/glb-models/floor/*.glb',    { eager: true, query: '?url', import: 'default' });
 const _handrailGlob = import.meta.glob('./assets/glb-models/handrail/*.glb', { eager: true, query: '?url', import: 'default' });
 // Optional: one merged mesh — avoids hundreds of HTTP requests for each stick segment (export from Blender to this path).
@@ -553,7 +565,7 @@ const ExpandMore = styled(IconButton, {
 // ─── BridgePartModel ────────────────────────────────────────────────────────
 // Loads one GLB and manages all per-model effects (highlight, opacity, material,
 // heatmap). Wrap in <Suspense> so variant switches don't blank the other parts.
-function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, deckColorMap, railColorMap, archWhiteGloss }) {
+function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, deckColorMap, railColorMap, archWhiteGloss, customMap }) {
   const gltf = useLoader(QueuedGLTFLoader, url);
   const origMats = useRef(null);
 
@@ -579,11 +591,11 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
           mat.map = railColorMap;
           if (mat.color) mat.color.setRGB(1, 1, 1);
           if (isPBR(mat)) {
-            mat.metalness = 0.96;
-            mat.roughness = 0.34;
-            mat.envMapIntensity = 1.45;
-            mat.clearcoat = 0.16;
-            mat.clearcoatRoughness = 0.36;
+            mat.metalness = 0.97;
+            mat.roughness = 0.28;
+            mat.envMapIntensity = 1.70;
+            mat.clearcoat = 0.30;
+            mat.clearcoatRoughness = 0.22;
             mat.bumpMap = null;
             mat.bumpScale = 0;
           }
@@ -591,11 +603,11 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
           if ('map' in mat) mat.map = null;
           if (mat.color) mat.color.setRGB(0.98, 0.99, 1);
           if (isPBR(mat)) {
-            mat.metalness = 0.11;
-            mat.roughness = 0.2;
-            mat.envMapIntensity = 1.38;
-            mat.clearcoat = 0.44;
-            mat.clearcoatRoughness = 0.22;
+            mat.metalness = 0.12;
+            mat.roughness = 0.16;
+            mat.envMapIntensity = 1.55;
+            mat.clearcoat = 0.58;
+            mat.clearcoatRoughness = 0.16;
             mat.bumpMap = null;
             mat.bumpScale = 0;
           }
@@ -715,6 +727,14 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
   // Material preset — runs after origMats capture (React effect source order)
   useEffect(() => {
     if (heatmapActive || !origMats.current) return;
+    if (customMap) {
+      origMats.current.forEach(({ mat }) => {
+        mat.map = customMap;
+        mat.color.setRGB(1, 1, 1);
+        mat.needsUpdate = true;
+      });
+      return;
+    }
     const preset = PRESETS[materialId] ?? null;
     origMats.current.forEach((entry) => {
       const {
@@ -751,22 +771,22 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
         if (archWhiteGloss) {
           mat.map = null;
           mat.color.setHex(0xffffff);
-          mat.roughness = Math.min(preset.roughness, 0.24);
-          mat.metalness = 0.11;
+          mat.roughness = Math.min(preset.roughness, 0.20);
+          mat.metalness = 0.12;
           applyPBRMaps(
             null,
             0,
-            Math.max(preset.envMapIntensity ?? 1, 1.32),
-            Math.max(preset.clearcoat ?? 0, 0.38),
-            Math.min(preset.clearcoatRoughness ?? 0.32, 0.28),
+            Math.max(preset.envMapIntensity ?? 1, 1.50),
+            Math.max(preset.clearcoat ?? 0, 0.52),
+            Math.min(preset.clearcoatRoughness ?? 0.28, 0.20),
           );
         } else {
           mat.color.setHex(preset.color);
           let r = preset.roughness;
           let m = preset.metalness;
           if (railColorMap) {
-            m = Math.max(m, 0.92);
-            r = Math.min(r, 0.4);
+            m = Math.max(m, 0.94);
+            r = Math.min(r, 0.32);
           }
           mat.roughness = r;
           mat.metalness = m;
@@ -774,51 +794,84 @@ function BridgePartModel({ url, selected, opacity, materialId, heatmapActive, de
           applyPBRMaps(
             railShine ? null : BRIDGE_BUMP,
             railShine ? 0 : (preset.bumpScale ?? 0.045),
-            railShine ? Math.max(preset.envMapIntensity ?? 1, 1.38) : (preset.envMapIntensity ?? 1),
-            railShine ? Math.max(preset.clearcoat ?? 0, 0.12) : (preset.clearcoat ?? 0),
-            railShine ? 0.4 : (preset.clearcoatRoughness ?? 0),
+            railShine ? Math.max(preset.envMapIntensity ?? 1, 1.62) : (preset.envMapIntensity ?? 1),
+            railShine ? Math.max(preset.clearcoat ?? 0, 0.22) : (preset.clearcoat ?? 0),
+            railShine ? 0.28 : (preset.clearcoatRoughness ?? 0),
           );
         }
       }
       mat.needsUpdate = true;
     });
-  }, [materialId, heatmapActive, gltf.scene, deckColorMap, railColorMap, archWhiteGloss]);
+  }, [materialId, heatmapActive, gltf.scene, deckColorMap, railColorMap, archWhiteGloss, customMap]);
 
   return <primitive object={gltf.scene} />;
 }
 
 /** Each stick segment gets its own <group> so it can be individually positioned during the explosion. */
-function ExplodingStructureParts({ structureUrls, selected, opacity, materialId, heatmapActive }) {
-  const partGroupRefs   = useRef([]);
-  const explosionVel    = useRef(0);
-  const explosionProg   = useRef(0);
-  const prevTriggerKey  = useRef(0);
-  const isExplodedRef   = useRef(false);
+function ExplodingStructureParts({ structureUrls, selected, opacity, materialId, heatmapActive, customMap }) {
+  const partGroupRefs      = useRef([]);
+  const explosionVel       = useRef(0);
+  const explosionProg      = useRef(0);
+  const prevTriggerKey     = useRef(0);
+  const isExplodedRef      = useRef(false);
 
-  const configIndex = useStore(state => state.stickConfigIndex);
-  const directions  = useMemo(() => {
-    const cfg = STICK_CONFIGS[configIndex % STICK_CONFIGS.length];
-    return structureUrls.map((_, i) => cfg(i, structureUrls.length));
-  }, [structureUrls, configIndex]);
+  // Two direction sets for cross-fading between configs — both start at config 0
+  const dirsFrom           = useRef(structureUrls.map((_, i) => STICK_CONFIGS[0](i, structureUrls.length)));
+  const dirsTo             = useRef(structureUrls.map((_, i) => STICK_CONFIGS[0](i, structureUrls.length)));
+  const morphProg          = useRef(1);   // 1 = fully at dirsTo, no pending transition
+  const morphVel           = useRef(0);
+  const prevConfigIndex    = useRef(0);
 
   useFrame(() => {
+    // ── Explode toggle ──────────────────────────────────────────────────────
     const freshTrigger = useStore.getState().explodeTriggerKey;
     if (freshTrigger !== prevTriggerKey.current) {
       prevTriggerKey.current = freshTrigger;
-      isExplodedRef.current = !isExplodedRef.current;
+      isExplodedRef.current  = !isExplodedRef.current;
       if (isExplodedRef.current) explosionVel.current = 0.55;
     }
-
-    const target = isExplodedRef.current ? 1.0 : 0.0;
-    explosionVel.current  += (target - explosionProg.current) * 0.055;
+    const explodeTarget = isExplodedRef.current ? 1.0 : 0.0;
+    explosionVel.current  += (explodeTarget - explosionProg.current) * 0.055;
     explosionVel.current  *= 0.83;
     explosionProg.current += explosionVel.current;
 
+    // ── Config morph ────────────────────────────────────────────────────────
+    const freshConfig = useStore.getState().stickConfigIndex;
+    if (freshConfig !== prevConfigIndex.current) {
+      prevConfigIndex.current = freshConfig;
+      // Snapshot the current interpolated positions as the new "from"
+      const m = morphProg.current;
+      dirsFrom.current = dirsTo.current.map((to, i) => {
+        const from = dirsFrom.current[i] || [0, 0, 0];
+        return [
+          from[0] + (to[0] - from[0]) * m,
+          from[1] + (to[1] - from[1]) * m,
+          from[2] + (to[2] - from[2]) * m,
+        ];
+      });
+      // Compute new target directions
+      const cfg = STICK_CONFIGS[freshConfig % STICK_CONFIGS.length];
+      dirsTo.current   = structureUrls.map((_, i) => cfg(i, structureUrls.length));
+      morphProg.current = 0;
+      morphVel.current  = 0;
+    }
+    // Smooth spring toward morph target (no bounce — higher damping)
+    morphVel.current  += (1 - morphProg.current) * 0.06;
+    morphVel.current  *= 0.85;
+    morphProg.current  = Math.min(1, morphProg.current + morphVel.current);
+
+    // ── Per-stick positions ─────────────────────────────────────────────────
     const p = Math.max(0, explosionProg.current);
+    const m = morphProg.current;
     partGroupRefs.current.forEach((ref, i) => {
       if (!ref) return;
-      const [dx, dy, dz] = directions[i];
-      ref.position.set(dx * p, dy * p, dz * p);
+      const from = dirsFrom.current[i] || [0, 0, 0];
+      const to   = dirsTo.current[i]   || [0, 0, 0];
+      ref.position.set(
+        (from[0] + (to[0] - from[0]) * m) * p,
+        (from[1] + (to[1] - from[1]) * m) * p,
+        (from[2] + (to[2] - from[2]) * m) * p,
+      );
     });
   });
 
@@ -834,12 +887,28 @@ function ExplodingStructureParts({ structureUrls, selected, opacity, materialId,
               materialId={materialId}
               heatmapActive={heatmapActive}
               archWhiteGloss
+              customMap={customMap}
             />
           </Suspense>
         </group>
       ))}
     </>
   );
+}
+
+/** Loads all custom material textures once; passes the active one into ExplodingStructureParts. */
+function StructureWithTextures({ activeMatId, ...props }) {
+  const maps = useTexture(CUSTOM_MATERIALS.map(m => m.url));
+  useLayoutEffect(() => {
+    maps.forEach(map => {
+      map.wrapS = map.wrapT = RepeatWrapping;
+      map.repeat.set(6, 6);
+      map.flipY = false;
+      map.needsUpdate = true;
+    });
+  }, [maps]);
+  const idx = CUSTOM_MATERIALS.findIndex(m => m.id === activeMatId);
+  return <ExplodingStructureParts {...props} customMap={idx >= 0 ? maps[idx] : null} />;
 }
 
 /** Loads shared concrete albedo once, applies to every floor GLB (step 9 at runtime vs. Blender bake). */
@@ -926,7 +995,8 @@ export default function Scene() {
   const selectedFloor   = useStore(state => state.selectedFloor);
   const selectedArch    = useStore(state => state.selectedArch);
   const selectedHandrail = useStore(state => state.selectedHandrail);
-  const assembleKey     = useStore(state => state.assembleKey);
+  const assembleKey             = useStore(state => state.assembleKey);
+  const structureCustomMaterial = useStore(state => state.structureCustomMaterial);
 
   const { gl, camera, scene, get } = useThree();
   useEffect(() => { setGl(gl); }, [gl]);
@@ -934,12 +1004,13 @@ export default function Scene() {
   useEffect(() => {
     gl.outputColorSpace = SRGBColorSpace;
     gl.toneMapping = ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.02;
+    gl.toneMappingExposure = 1.10;
   }, [gl]);
 
   const cameraRef      = useRef();
   const controlsRef    = useRef();
   const dirLightRef    = useRef();
+  const fillLightRef   = useRef();
   const ambLightRef    = useRef();
   const pointerDownPos = useRef({ x: 0, y: 0 });
   const structureGroupRef    = useRef();
@@ -971,14 +1042,18 @@ export default function Scene() {
   // Lighting mode: adjust light color/intensity per mode
   useEffect(() => {
     const LIGHTING = {
-      day:   { dirColor: 0xffffff, dirIntensity: 1.32, ambColor: 0xffffff, ambIntensity: 0.34 },
-      dusk:  { dirColor: 0xff8844, dirIntensity: 1.05, ambColor: 0xff6633, ambIntensity: 0.3 },
-      night: { dirColor: 0x4466aa, dirIntensity: 0.38, ambColor: 0x223366, ambIntensity: 0.18 },
+      day:   { dirColor: 0xfff8f0, dirIntensity: 1.30, ambColor: 0xffffff, ambIntensity: 0.34, fillColor: 0xd8eaf8, fillIntensity: 0.42 },
+      dusk:  { dirColor: 0xff7733, dirIntensity: 1.10, ambColor: 0xff5522, ambIntensity: 0.30, fillColor: 0x7733aa, fillIntensity: 0.20 },
+      night: { dirColor: 0x4466cc, dirIntensity: 0.42, ambColor: 0x112255, ambIntensity: 0.20, fillColor: 0x223388, fillIntensity: 0.12 },
     };
     const cfg = LIGHTING[lightingMode] || LIGHTING.day;
     if (dirLightRef.current) {
       dirLightRef.current.color.setHex(cfg.dirColor);
       dirLightRef.current.intensity = cfg.dirIntensity;
+    }
+    if (fillLightRef.current) {
+      fillLightRef.current.color.setHex(cfg.fillColor);
+      fillLightRef.current.intensity = cfg.fillIntensity;
     }
     if (ambLightRef.current) {
       ambLightRef.current.color.setHex(cfg.ambColor);
@@ -1159,10 +1234,11 @@ export default function Scene() {
       />
 
       <Suspense fallback={null}>
-        <Environment preset="city" environmentIntensity={0.4} />
+        <Environment preset="studio" environmentIntensity={0.85} background={false} />
       </Suspense>
-      <hemisphereLight args={[0xc8dae8, 0x1e1c1a, 0.22]} />
-      <directionalLight ref={dirLightRef} castShadow={false} position={[14, 22, 10]} intensity={1.32} />
+      <hemisphereLight args={[0xd4eaf8, 0x221e1c, 0.30]} />
+      <directionalLight ref={dirLightRef} castShadow={false} position={[14, 22, 10]} intensity={1.30} />
+      <directionalLight ref={fillLightRef} castShadow={false} position={[-10, 6, -8]} intensity={0.42} color={0xd8eaf8} />
       <ambientLight ref={ambLightRef} intensity={0.34} />
 
       {/* Floor / base layer — all segments rendered together */}
@@ -1191,13 +1267,16 @@ export default function Scene() {
             onPointerDown={handlePointerDown}
             onClick={handlePartClick('structure')}
           >
-            <ExplodingStructureParts
-              structureUrls={_structureUrls}
-              selected={selectedPart === 'structure'}
-              opacity={effectiveArchOpacity}
-              materialId={structureMaterial}
-              heatmapActive={heatmapActive}
-            />
+            <Suspense fallback={null}>
+              <StructureWithTextures
+                activeMatId={structureCustomMaterial}
+                structureUrls={_structureUrls}
+                selected={selectedPart === 'structure'}
+                opacity={effectiveArchOpacity}
+                materialId={structureMaterial}
+                heatmapActive={heatmapActive}
+              />
+            </Suspense>
           </group>
         </group>
       )}

@@ -183,4 +183,8 @@ export let useStore = create((set) => ({
   stickConfigIndex: 0,
   nextStickConfig: () => set(state => ({ stickConfigIndex: state.stickConfigIndex + 1 })),
 
+  // Custom texture applied to the structure/sticks layer (null = use preset)
+  structureCustomMaterial: null,
+  setStructureCustomMaterial: (id) => set({ structureCustomMaterial: id }),
+
 }));

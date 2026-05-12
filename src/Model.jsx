@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Loader } from '@react-three/drei';
-import Scene, { FLOOR_COUNT, STRUCTURE_COUNT, HANDRAIL_COUNT, STICK_CONFIG_NAMES } from './Scene.jsx';
+import Scene, { FLOOR_COUNT, STRUCTURE_COUNT, HANDRAIL_COUNT, STICK_CONFIG_NAMES, CUSTOM_MATERIALS } from './Scene.jsx';
 import {
   Alert,
   Accordion,
@@ -105,8 +105,10 @@ export default function Model() {
   const setLanguage = useStore(state => state.setLanguage);
   const triggerAssemble  = useStore(state => state.triggerAssemble);
   const triggerExplode   = useStore(state => state.triggerExplode);
-  const stickConfigIndex = useStore(state => state.stickConfigIndex);
-  const nextStickConfig  = useStore(state => state.nextStickConfig);
+  const stickConfigIndex       = useStore(state => state.stickConfigIndex);
+  const nextStickConfig        = useStore(state => state.nextStickConfig);
+  const structureCustomMaterial    = useStore(state => state.structureCustomMaterial);
+  const setStructureCustomMaterial = useStore(state => state.setStructureCustomMaterial);
 
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
@@ -422,7 +424,7 @@ export default function Model() {
         </Box>
       )}
 
-      {/* Explode / Config strip — always on canvas, no panel needed */}
+      {/* Interaction strip — material swatches + config/explode controls */}
       {!agentChatOpen && !designerOpen && !showAccordion && (
         <Box sx={{
           position: 'fixed',
@@ -431,49 +433,122 @@ export default function Model() {
           transform: 'translateX(-50%)',
           zIndex: 10000,
           display: 'flex',
-          alignItems: 'stretch',
-          gap: '1px',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px',
         }}>
-          <Box
-            component="button"
-            onClick={nextStickConfig}
-            sx={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              px: 2, py: 0,
-              bgcolor: 'rgba(13,13,13,0.88)',
-              backdropFilter: 'blur(12px)',
-              border: `1px solid ${C.outline}`,
-              borderRight: 'none',
-              color: C.onSurfaceDim,
-              fontFamily: FONT_LABEL, fontSize: 10,
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'border-color 0.15s, color 0.15s',
-              '&:hover': { borderColor: C.primaryDeep, color: C.primary },
-            }}
-          >
-            <Box component="span" sx={{ opacity: 0.35, fontSize: 8 }}>◂</Box>
-            {STICK_CONFIG_NAMES[stickConfigIndex % STICK_CONFIG_NAMES.length]}
-            <Box component="span" sx={{ opacity: 0.35, fontSize: 8 }}>▸</Box>
+          {/* Material swatch row */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            px: '10px',
+            py: '8px',
+            bgcolor: 'rgba(13,13,13,0.88)',
+            backdropFilter: 'blur(12px)',
+            border: `1px solid ${C.outline}`,
+          }}>
+            {/* Reset swatch */}
+            <Box
+              component="button"
+              onClick={() => setStructureCustomMaterial(null)}
+              title="Original material"
+              sx={{
+                width: 28, height: 28,
+                borderRadius: '50%',
+                border: structureCustomMaterial === null
+                  ? `2px solid ${C.primary}`
+                  : `1px solid rgba(96,62,57,0.4)`,
+                bgcolor: 'rgba(50,50,50,0.9)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'border-color 0.15s, transform 0.1s',
+                boxShadow: structureCustomMaterial === null ? `0 0 8px ${C.primaryGlow}` : 'none',
+                '&:hover': { transform: 'scale(1.15)' },
+                padding: 0,
+              }}
+            >
+              <Box sx={{
+                width: 14, height: 14, borderRadius: '50%',
+                background: 'conic-gradient(from 0deg, #aaa 0%, #555 50%, #aaa 100%)',
+                opacity: 0.7,
+              }} />
+            </Box>
+
+            {/* Texture swatches */}
+            {CUSTOM_MATERIALS.map((mat) => {
+              const active = structureCustomMaterial === mat.id;
+              return (
+                <Box
+                  key={mat.id}
+                  component="button"
+                  onClick={() => setStructureCustomMaterial(active ? null : mat.id)}
+                  title={mat.label}
+                  sx={{
+                    width: 28, height: 28,
+                    borderRadius: '50%',
+                    border: active
+                      ? `2px solid ${C.primary}`
+                      : `1px solid rgba(96,62,57,0.3)`,
+                    backgroundImage: `url(${mat.url})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'border-color 0.15s, transform 0.1s',
+                    boxShadow: active ? `0 0 8px ${C.primaryGlow}` : 'none',
+                    '&:hover': { transform: 'scale(1.15)' },
+                    padding: 0,
+                  }}
+                />
+              );
+            })}
           </Box>
-          <Box
-            component="button"
-            onClick={triggerExplode}
-            sx={{
-              px: 2.5, py: 1.25,
-              bgcolor: C.primaryDeep,
-              border: `1px solid ${C.primaryDeep}`,
-              color: '#fff',
-              fontFamily: FONT_LABEL, fontSize: 10,
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '6px',
-              whiteSpace: 'nowrap',
-              transition: 'background-color 0.15s',
-              '&:hover': { bgcolor: '#a00000', borderColor: '#a00000' },
-            }}
-          >
-            ✦ EXPLODE
+
+          {/* Config + Explode row */}
+          <Box sx={{ display: 'flex', alignItems: 'stretch', gap: '1px' }}>
+            <Box
+              component="button"
+              onClick={nextStickConfig}
+              sx={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                px: 2, py: 0,
+                bgcolor: 'rgba(13,13,13,0.88)',
+                backdropFilter: 'blur(12px)',
+                border: `1px solid ${C.outline}`,
+                borderRight: 'none',
+                color: C.onSurfaceDim,
+                fontFamily: FONT_LABEL, fontSize: 10,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                transition: 'border-color 0.15s, color 0.15s',
+                '&:hover': { borderColor: C.primaryDeep, color: C.primary },
+              }}
+            >
+              <Box component="span" sx={{ opacity: 0.35, fontSize: 8 }}>◂</Box>
+              {STICK_CONFIG_NAMES[stickConfigIndex % STICK_CONFIG_NAMES.length]}
+              <Box component="span" sx={{ opacity: 0.35, fontSize: 8 }}>▸</Box>
+            </Box>
+            <Box
+              component="button"
+              onClick={triggerExplode}
+              sx={{
+                px: 2.5, py: 1.25,
+                bgcolor: C.primaryDeep,
+                border: `1px solid ${C.primaryDeep}`,
+                color: '#fff',
+                fontFamily: FONT_LABEL, fontSize: 10,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '6px',
+                whiteSpace: 'nowrap',
+                transition: 'background-color 0.15s',
+                '&:hover': { bgcolor: '#a00000', borderColor: '#a00000' },
+              }}
+            >
+              ✦ EXPLODE
+            </Box>
           </Box>
         </Box>
       )}
