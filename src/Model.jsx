@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Loader } from '@react-three/drei';
-import Scene, { FLOOR_COUNT, STRUCTURE_COUNT, HANDRAIL_COUNT } from './Scene.jsx';
+import Scene, { FLOOR_COUNT, STRUCTURE_COUNT, HANDRAIL_COUNT, STICK_CONFIG_NAMES } from './Scene.jsx';
 import {
   Alert,
   Accordion,
@@ -103,8 +103,10 @@ export default function Model() {
   const setShowAccordion = useStore(state => state.setShowAccordion);
   const language = useStore(state => state.language);
   const setLanguage = useStore(state => state.setLanguage);
-  const triggerAssemble = useStore(state => state.triggerAssemble);
-  const triggerExplode = useStore(state => state.triggerExplode);
+  const triggerAssemble  = useStore(state => state.triggerAssemble);
+  const triggerExplode   = useStore(state => state.triggerExplode);
+  const stickConfigIndex = useStore(state => state.stickConfigIndex);
+  const nextStickConfig  = useStore(state => state.nextStickConfig);
 
   const activeSlide = useStore(state => state.activeCarouselSlide);
   const setActiveSlide = useStore(state => state.setActiveCarouselSlide);
@@ -881,6 +883,31 @@ export default function Model() {
 
             {/* ── Action buttons ── */}
             <Box sx={{ px: 3, mb: 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box
+                component="button"
+                onClick={nextStickConfig}
+                sx={{
+                  width: '100%', py: 1.5,
+                  bgcolor: 'transparent', color: '#111',
+                  border: '1px solid #111111',
+                  fontFamily: FONT_HEAD, fontWeight: 600, fontSize: 11,
+                  letterSpacing: '0.12em', textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  px: 2,
+                  transition: 'background-color 0.2s, color 0.2s',
+                  '&:hover': { bgcolor: '#111111', color: '#F6F4F1' },
+                }}
+              >
+                <Box component="span">CONFIG</Box>
+                <Box component="span" sx={{ fontWeight: 700, letterSpacing: '0.06em' }}>
+                  {STICK_CONFIG_NAMES[stickConfigIndex % STICK_CONFIG_NAMES.length]}
+                  <Box component="span" sx={{ opacity: 0.4, ml: '6px' }}>
+                    {String((stickConfigIndex % STICK_CONFIG_NAMES.length) + 1).padStart(2, '0')}/{String(STICK_CONFIG_NAMES.length).padStart(2, '0')}
+                  </Box>
+                </Box>
+              </Box>
+
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Box
                   component="button"

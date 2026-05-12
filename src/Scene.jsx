@@ -110,6 +110,48 @@ function seededRandom(seed) {
   return x - Math.floor(x);
 }
 
+const STICK_CONFIGS = [
+  // 0: Sphere burst — uniform random sphere
+  (i, _n) => {
+    const theta = seededRandom(i * 7)     * Math.PI * 2;
+    const phi   = Math.acos(2 * seededRandom(i * 7 + 1) - 1);
+    const mag   = 3 + seededRandom(i * 7 + 2) * 10;
+    return [Math.sin(phi) * Math.cos(theta) * mag, Math.cos(phi) * mag, Math.sin(phi) * Math.sin(theta) * mag];
+  },
+  // 1: Alt scatter — different seed, wider spread
+  (i, _n) => {
+    const theta = seededRandom(i * 13 + 7) * Math.PI * 2;
+    const phi   = Math.acos(2 * seededRandom(i * 13 + 8) - 1);
+    const mag   = 2 + seededRandom(i * 13 + 9) * 13;
+    return [Math.sin(phi) * Math.cos(theta) * mag, Math.cos(phi) * mag, Math.sin(phi) * Math.sin(theta) * mag];
+  },
+  // 2: Radial fan — cylindrical spread around Y axis
+  (i, n) => {
+    const angle = (i / n) * Math.PI * 2;
+    const mag   = 5 + seededRandom(i * 3) * 7;
+    const y     = (seededRandom(i * 3 + 1) - 0.5) * 8;
+    return [Math.cos(angle) * mag, y, Math.sin(angle) * mag];
+  },
+  // 3: Vortex helix — pieces uncoil into a descending spiral around the bridge axis
+  (i, n) => {
+    const t      = i / n;
+    const angle  = t * Math.PI * 2 * 5 + seededRandom(i * 3) * 0.6;
+    const radius = 3 + seededRandom(i * 3 + 1) * 5;
+    const y      = (t - 0.5) * 20 + (seededRandom(i * 3 + 2) - 0.5) * 2;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+  // 4: Orbital rings — sticks orbit in 5 concentric rings at staggered heights
+  (i, n) => {
+    const ring   = i % 5;
+    const angle  = (i / n) * Math.PI * 2 * (ring + 1);
+    const radius = 4 + ring * 2;
+    const y      = (ring - 2) * 2.5;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  },
+];
+
+export const STICK_CONFIG_NAMES = ['SCATTER', 'ALT SCATTER', 'RADIAL', 'VORTEX', 'ORBITAL'];
+
 // Material preset table — PBR fields use MeshStandardMaterial clearcoat / envMapIntensity (three r152+).
 const PRESETS = {
   granite: {
@@ -534,17 +576,11 @@ function ExplodingStructureParts({ structureUrls, selected, opacity, materialId,
   const prevTriggerKey  = useRef(0);
   const isExplodedRef   = useRef(false);
 
-  // Uniform-sphere random direction per stick, seeded by index so it's deterministic across renders
-  const directions = useMemo(() => structureUrls.map((_, i) => {
-    const theta = seededRandom(i * 7)     * Math.PI * 2;
-    const phi   = Math.acos(2 * seededRandom(i * 7 + 1) - 1);
-    const mag   = 3 + seededRandom(i * 7 + 2) * 10;
-    return [
-      Math.sin(phi) * Math.cos(theta) * mag,
-      Math.cos(phi) * mag,
-      Math.sin(phi) * Math.sin(theta) * mag,
-    ];
-  }), [structureUrls]);
+  const configIndex = useStore(state => state.stickConfigIndex);
+  const directions  = useMemo(() => {
+    const cfg = STICK_CONFIGS[configIndex % STICK_CONFIGS.length];
+    return structureUrls.map((_, i) => cfg(i, structureUrls.length));
+  }, [structureUrls, configIndex]);
 
   useFrame(() => {
     const freshTrigger = useStore.getState().explodeTriggerKey;

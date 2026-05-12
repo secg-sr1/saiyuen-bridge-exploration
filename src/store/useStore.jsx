@@ -179,4 +179,8 @@ export let useStore = create((set) => ({
   explodeTriggerKey: 0,
   triggerExplode: () => set(state => ({ explodeTriggerKey: state.explodeTriggerKey + 1 })),
 
+  // Stick scatter configuration — cycles through STICK_CONFIGS in Scene.jsx
+  stickConfigIndex: 0,
+  nextStickConfig: () => set(state => ({ stickConfigIndex: state.stickConfigIndex + 1 })),
+
 }));
